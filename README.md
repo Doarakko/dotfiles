@@ -4,6 +4,7 @@
 
 - 1Password7
 - BetterSnapTool
+- Google Chrome
 - LINE
 - Slack
 - Todoist
@@ -18,5 +19,7 @@
 - Homebrew
 - nvm
   - yarn
+- Postman
 - pyenv
   - poetry
+- rbenv

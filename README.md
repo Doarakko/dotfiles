@@ -1,13 +1,15 @@
 # setup
 
-## usually
+## application
 
 - 1Password7
-- BetterSnapTool
+- Raycast
 - Google Chrome
 - LINE
 - Slack
 - Todoist
+- Warp
+- Cusor
 - Visual Studio Code
 
 ## development
@@ -17,9 +19,4 @@
 - Git
 - Go
 - Homebrew
-- nvm
-  - yarn
 - Postman
-- pyenv
-  - poetry
-- rbenv

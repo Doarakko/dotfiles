@@ -21,8 +21,6 @@ rm -rf ~/.claude && ln -s ~/src/github.com/Doarakko/setup/.claude ~/.claude
 - LINE
 - Slack
 - Todoist
-- Warp
-- Cusor
 - Visual Studio Code
 
 ## development
@@ -33,3 +31,5 @@ rm -rf ~/.claude && ln -s ~/src/github.com/Doarakko/setup/.claude ~/.claude
 - Go
 - Homebrew
 - Postman
+- Claude Code
+- gh

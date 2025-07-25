@@ -3,6 +3,7 @@
         "allow": [
             "Bash(cat:*)",
             "Bash(cp:*)",
+            "Bash(echo:*)",
             "Bash(find:*)",
             "Bash(head:*)",
             "Bash(gh api:*)",

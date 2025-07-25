@@ -24,6 +24,7 @@
             "Bash(git push:*)",
             "Bash(git reset:*)",
             "Bash(git diff:*)",
+            "Bash(git stash:*)",
             "Bash(git status:*)",
             "Bash(git fetch:*)",
             "Bash(git show-ref:*)",

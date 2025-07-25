@@ -46,7 +46,33 @@
             "Bash(rg:*)",
             "Bash(tail:*)",
             "Bash(xargs grep:*)",
-            "Read(~/.claude/commands/*.md)"
+            "Bash(osascript:*)",
+            "Bash(date:*)",
+            "Bash(.claude/hooks/task-completion-notify.sh)",
+            "Read(~/.claude/commands/*.md)",
+            "Fetch(https://docs.anthropic.com/*)"
+        ]
+    },
+    "hooks": {
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "/Users/yukitanaami/src/github.com/Doarakko/setup/.claude/hooks/task-completion-notify.sh"
+                    }
+                ]
+            }
+        ],
+        "SubagentStop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "/Users/yukitanaami/src/github.com/Doarakko/setup/.claude/hooks/task-completion-notify.sh"
+                    }
+                ]
+            }
         ]
     }
 }

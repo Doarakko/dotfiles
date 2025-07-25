@@ -18,6 +18,7 @@
             "Bash(git commit:*)",
             "Bash(git checkout:*)",
             "Bash(git log:*)",
+            "Bash(git ls-remote:*)",
             "Bash(git push:*)",
             "Bash(git rm:*)",
             "Bash(grep:*)",

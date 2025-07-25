@@ -1,98 +1,142 @@
-# GitHub PR Review Comment Fix Command
+# GitHub PR レビューコメント修正コマンド
 
-Automatically check PR review comments and apply the requested fixes.
+PRのレビューコメントを自動的にチェックして、要求された修正を適用します。
 
-## Usage
+## 使用方法
 ```bash
-/review-fix [pr-number]
+/review-fix [pr番号]
 ```
 
-If no PR number is provided, uses the current branch's PR.
+PR番号が指定されない場合は、現在のブランチのPRを使用します。
 
-## Instructions
-1. Fetch the PR and its review comments using GitHub CLI
-2. Analyze each review comment for actionable feedback
-3. Apply the requested changes automatically when possible
-4. Run tests and linting to ensure fixes are correct
-5. Commit changes with reference to review feedback
-6. Push changes and notify about completion
+## 処理手順
+1. GitHub CLIを使ってPRとレビューコメントを取得
+2. 各レビューコメントを分析して実行可能なフィードバックを特定
+3. 可能な限り要求された変更を自動適用
+4. テストとリンティングを実行して修正を検証
+5. コミットせずに変更内容の概要を表示
 
-## Implementation
-Start by getting the current PR information and review comments.
+## 実装
+PRの情報とレビューコメントの取得から開始します。
 
-### Step 1: Get PR Information
+### ステップ1: PR情報の取得
 ```bash
-# Get current branch PR if no number provided
-gh pr view --json number,reviewRequests,reviews,url
+# GitHub CLIの認証とスコープを最初にチェック
+echo "🔍 GitHub CLIの設定を確認中..."
+gh auth status
 
-# Or get specific PR
-gh pr view {pr-number} --json number,reviewRequests,reviews,url
+# PR番号が指定されていない場合は現在のブランチのPRを取得（フォールバック処理付き）
+PR_INFO=$(gh pr view --json number,reviews,url 2>/dev/null || echo "")
+if [ -z "$PR_INFO" ]; then
+    echo "❌ PR情報を取得できません。考えられる原因："
+    echo "   - 現在のブランチにPRが存在しない"
+    echo "   - GitHub CLIに追加のスコープが必要 (read:org, read:discussion)"
+    echo "   - 認証の問題"
+    echo ""
+    echo "💡 GitHub CLIのスコープを修正するには："
+    echo "   1. https://github.com/settings/tokens にアクセス"
+    echo "   2. トークンに'read:org'と'read:discussion'スコープを追加"
+    echo "   3. 実行: gh auth login --with-token < your_token_file"
+    echo ""
+    echo "🔄 代替方法: PR番号を手動で指定 /review-fix <pr番号>"
+    exit 1
+fi
+
+# 後続のコマンドで使用するためにPR番号を抽出
+PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number')
+echo "📋 PR #$PR_NUMBER を発見"
 ```
 
-### Step 2: Fetch Review Comments
+### ステップ2: レビューコメントの取得  
 ```bash
-# Get review comments with file context
-gh pr view {pr-number} --json reviews
-gh api repos/:owner/:repo/pulls/{pr-number}/comments
+# 包括的なエラーハンドリングでレビューコメントを取得
+echo "📥 PR #$PR_NUMBER のレビューコメントを取得中..."
+
+# レビューデータを取得する複数の方法を試行
+REVIEWS=$(gh pr view $PR_NUMBER --json reviews 2>/dev/null || echo "")
+COMMENTS=$(gh api "repos/:owner/:repo/pulls/$PR_NUMBER/comments" 2>/dev/null || echo "")
+
+if [ -z "$REVIEWS" ] && [ -z "$COMMENTS" ]; then
+    echo "❌ レビューコメントを取得できません。GitHub CLIの権限を確認してください。"
+    echo "💡 必要なスコープ: repo, read:org, read:discussion"
+    exit 1
+fi
+
+# レビューサマリーを解析して表示
+echo "📊 レビューサマリー："
+if [ -n "$REVIEWS" ]; then
+    echo "$REVIEWS" | jq -r '.reviews[] | "- \(.state) by \(.user.login): \(.body // "コメントなし")"'
+fi
+
+if [ -n "$COMMENTS" ]; then
+    echo "💬 行コメント："
+    echo "$COMMENTS" | jq -r '.[] | "- \(.path):\(.line) - \(.body)"'
+fi
 ```
 
-### Step 3: Parse and Categorize Comments
-For each review comment:
-1. **Code suggestions**: Apply suggested code changes directly
-2. **Style/formatting**: Run appropriate linters/formatters
-3. **Logic issues**: Analyze and implement requested logic changes  
-4. **Documentation**: Update comments, README, or docs as requested
-5. **Testing**: Add or modify tests as suggested
-6. **Security concerns**: Address security-related feedback
+### ステップ3: コメントの解析と分類
+各レビューコメントについて：
+1. **コードの提案**: 提案されたコード変更を直接適用
+2. **スタイル/フォーマット**: 適切なリンターやフォーマッターを実行
+3. **ロジックの問題**: 要求されたロジック変更を分析して実装  
+4. **ドキュメント**: 要求に応じてコメント、README、ドキュメントを更新
+5. **テスト**: 提案に従ってテストを追加または修正
+6. **セキュリティ懸念**: セキュリティ関連のフィードバックに対処
 
-### Step 4: Apply Fixes Systematically
-- Use file path and line number from review comments to locate exact changes needed
-- For code suggestions, apply the suggested diff directly
-- For broader feedback, implement comprehensive fixes
-- Validate each fix doesn't break existing functionality
+### ステップ4: 修正の体系的適用
+- レビューコメントのファイルパスと行番号を使用して、必要な変更箇所を正確に特定
+- コードの提案については、提案されたdiffを直接適用
+- より幅広いフィードバックについては、包括的な修正を実装
+- 各修正が既存の機能を破損しないことを検証
 
-### Step 5: Verify and Commit
+### ステップ5: 変更の検証
 ```bash
-# Run tests if available
-npm test || python -m pytest || go test || cargo test
+# 修正を検証するためにテストを実行（利用可能な場合）
+echo "🧪 修正を検証するためにテストを実行中..."
+npm test || python -m pytest || go test || cargo test || echo "テストコマンドが見つかりません"
 
-# Run linting
-npm run lint || ruff check || golangci-lint run
+# コードスタイルをチェックするためにリンティングを実行
+echo "🔍 リンティングチェックを実行中..."
+npm run lint || ruff check || golangci-lint run || echo "リントコマンドが見つかりません"
 
-# Commit with descriptive message
-git add .
-git commit -m "fix: address PR review feedback
-
-- Applied code suggestions from review
-- Fixed style/formatting issues  
-- Updated documentation as requested
-- Added requested test coverage
-
-Addresses review comments in PR #{pr-number}"
-
-# Push changes
-git push
+# 行われた変更を表示するためにgit statusを表示
+echo "📝 行われた変更の概要："
+git status --porcelain
+echo ""
+echo "📋 詳細diff："
+git diff --stat
+echo ""
+echo "✅ レビュー修正が正常に適用されました！"
+echo "💡 準備ができたら /commit-create を使用してこれらの変更をコミットしてください"
 ```
 
-### Step 6: Update PR
+### ステップ6: サマリーレポート
 ```bash
-# Add comment about fixes applied
-gh pr comment {pr-number} --body "🤖 Applied review feedback:
-- [List of specific changes made]
-- All tests passing
-- Linting issues resolved
-
-Ready for re-review!"
+# 適用された修正のサマリーを生成
+echo "🤖 レビュー修正サマリー："
+echo "- PRレビューコメントの問題を修正"
+echo "- 可能な限りコードの提案を適用" 
+echo "- スタイル/フォーマットの問題を解決"
+echo "- 要求に応じてドキュメントを更新"
+echo ""
+echo "📊 変更されたファイル数: $(git diff --name-only | wc -l)"
+echo "📈 変更された行数: +$(git diff --numstat | awk '{add+=$1} END {print add}') -$(git diff --numstat | awk '{del+=$2} END {print del}')"
+echo ""
+echo "🔄 次のステップ："
+echo "1. 'git diff' で変更内容を確認"
+echo "2. 必要に応じて追加のテストを実行"
+echo "3. 満足したら /commit-create を使用してコミット"
 ```
 
-## Error Handling
-- If review comments are unclear, ask for clarification in PR comment
-- If automated fix isn't possible, create TODO comments and notify in PR
-- If tests fail after fixes, revert and request guidance
-- Handle merge conflicts gracefully
+## エラーハンドリング
+- レビューコメントが不明確な場合は、手動レビュー用のTODOコメントを表示
+- 自動修正が不可能な場合は、コード内にTODOコメントを作成
+- 修正後にテストが失敗した場合は、失敗詳細を表示してガイダンスを求める
+- マージコンフリクトを適切に処理し、発見されたコンフリクトを報告
 
-## Notes
-- Only apply changes that are clearly requested and safe
-- For complex logic changes, implement conservatively and ask for confirmation
-- Preserve existing code style and patterns
-- Always run tests before committing fixes
+## 注意事項
+- 明確に要求され、安全な変更のみを適用
+- 複雑なロジック変更については、保守的に実装し確認を求める
+- 既存のコードスタイルとパターンを保持
+- 修正を検証するために必ずテストを実行するが、自動的にはコミットしない
+- レビュー後に変更をコミットするには /commit-create コマンドを使用

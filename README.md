@@ -1,5 +1,18 @@
 # setup
 
+## Usage
+
+```bash
+git clone https://github.com/Doarakko/setup.git
+cd setup
+```
+
+### Claude Code
+
+```bash
+rm -rf ~/.claude && ln -s ~/src/github.com/Doarakko/setup/.claude ~/.claude
+```
+
 ## application
 
 - 1Password7

@@ -1,16 +1,16 @@
-# setup
+# dotfiles
 
 ## Usage
 
 ```bash
-git clone https://github.com/Doarakko/setup.git
-cd setup
+git clone https://github.com/Doarakko/dotfiles.git
+cd dotfiles
 ```
 
 ### Claude Code
 
 ```bash
-rm -rf ~/.claude && ln -s ~/src/github.com/Doarakko/setup/.claude ~/.claude
+rm -rf ~/.claude && ln -s ~/src/dotfiles/.claude ~/.claude
 ```
 
 ## application

@@ -59,7 +59,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "/Users/yukitanaami/src/github.com/Doarakko/setup/.claude/hooks/task-completion-notify.sh"
+                        "command": "~/.claude/hooks/task-completion-notify.sh"
                     }
                 ]
             }
@@ -69,7 +69,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "/Users/yukitanaami/src/github.com/Doarakko/setup/.claude/hooks/task-completion-notify.sh"
+                        "command": "~/.claude/hooks/task-completion-notify.sh"
                     }
                 ]
             }

@@ -151,6 +151,11 @@ commit_by_file() {
                     git add "$file"
                     git commit -m "$COMMIT_MSG"
                     echo "✅ コミット完了: $file"
+                    # 各コミット後にpush実行を確認
+                    read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
+                    if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
+                        auto_push_changes
+                    fi
                     ;;
                 e|E)
                     read -p "📝 コミットメッセージを入力: " custom_msg
@@ -158,6 +163,11 @@ commit_by_file() {
                         git add "$file"
                         git commit -m "$custom_msg"
                         echo "✅ コミット完了: $file"
+                        # 各コミット後にpush実行を確認
+                        read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
+                        if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
+                            auto_push_changes
+                        fi
                     else
                         echo "⏭️  スキップ: $file"
                     fi
@@ -218,6 +228,11 @@ commit_by_feature() {
                         echo "$DIR_FILES" | xargs git add
                         git commit -m "$COMMIT_MSG"
                         echo "✅ コミット完了: $dir"
+                        # 各コミット後にpush実行を確認
+                        read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
+                        if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
+                            auto_push_changes
+                        fi
                         ;;
                     e|E)
                         read -p "📝 コミットメッセージを入力: " custom_msg
@@ -225,6 +240,11 @@ commit_by_feature() {
                             echo "$DIR_FILES" | xargs git add
                             git commit -m "$custom_msg"
                             echo "✅ コミット完了: $dir"
+                            # 各コミット後にpush実行を確認
+                            read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
+                            if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
+                                auto_push_changes
+                            fi
                         else
                             echo "⏭️  スキップ: $dir"
                         fi
@@ -353,6 +373,11 @@ commit_staged_changes() {
     if [ -n "$commit_msg" ]; then
         git commit -m "$commit_msg"
         echo "✅ コミット完了！"
+        # コミット後にpush実行を確認
+        read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
+        if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
+            auto_push_changes
+        fi
     else
         echo "❌ コミットメッセージが空のためキャンセルしました"
     fi
@@ -371,6 +396,32 @@ show_diff_summary() {
     fi
 }
 
+auto_push_changes() {
+    # 現在のブランチ名を取得
+    CURRENT_BRANCH=$(git branch --show-current)
+    
+    echo "📤 リモートブランチにプッシュ中..."
+    
+    # リモートブランチが存在するかチェック
+    if git ls-remote --heads origin "$CURRENT_BRANCH" | grep -q "$CURRENT_BRANCH"; then
+        # リモートブランチが存在する場合は通常のpush
+        git push
+        if [ $? -eq 0 ]; then
+            echo "✅ プッシュ完了: $CURRENT_BRANCH"
+        else
+            echo "⚠️  プッシュでエラーが発生しました"
+        fi
+    else
+        # リモートブランチが存在しない場合は -u オプション付きでpush
+        git push -u origin "$CURRENT_BRANCH"
+        if [ $? -eq 0 ]; then
+            echo "✅ 新しいブランチを作成してプッシュ完了: $CURRENT_BRANCH"
+        else
+            echo "⚠️  プッシュでエラーが発生しました"
+        fi
+    fi
+}
+
 show_help() {
     echo "📚 コミット分割ヘルプ"
     echo ""
@@ -386,10 +437,14 @@ show_help() {
     echo "  - git diff --cached : ステージされた変更の確認"
     echo "  - git reset <file> : ファイルのアンステージ"
     echo "  - git status : 現在の状態確認"
+    echo ""
+    echo "📤 プッシュ機能:"
+    echo "  - 各コミット後に個別でプッシュするか選択可能"
+    echo "  - 最終処理で全てのコミットを一括プッシュ"
 }
 ```
 
-### ステップ8: 完了処理
+### ステップ8: 完了処理とプッシュ
 ```bash
 # 最終確認と統計
 echo ""
@@ -399,10 +454,38 @@ echo "📈 作成されたコミット:"
 git log --oneline -10
 
 echo ""
-echo "💡 次のステップ:"
-echo "  1. git log でコミット履歴を確認"
-echo "  2. 必要に応じて git rebase -i でコミットを調整"
-echo "  3. git push でリモートに反映"
+echo "📤 リモートブランチにプッシュ中..."
+
+# 現在のブランチ名を取得
+CURRENT_BRANCH=$(git branch --show-current)
+
+# リモートブランチが存在するかチェック
+if git ls-remote --heads origin "$CURRENT_BRANCH" | grep -q "$CURRENT_BRANCH"; then
+    # リモートブランチが存在する場合は通常のpush
+    git push
+    echo "✅ プッシュ完了: $CURRENT_BRANCH"
+else
+    # リモートブランチが存在しない場合は -u オプション付きでpush
+    git push -u origin "$CURRENT_BRANCH"
+    echo "✅ 新しいブランチを作成してプッシュ完了: $CURRENT_BRANCH"
+fi
+
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "🚀 すべてのコミットがリモートに反映されました！"
+    echo ""
+    echo "💡 次のステップ:"
+    echo "  1. PR作成: /pr-create"
+    echo "  2. コミット履歴確認: git log --oneline"
+    echo "  3. 必要に応じてgit rebase -i でコミットを調整"
+else
+    echo ""
+    echo "⚠️  プッシュでエラーが発生しました"
+    echo "💡 対処法:"
+    echo "  1. リモートの最新を取得: git fetch origin"
+    echo "  2. 必要に応じてrebase: git rebase origin/main"
+    echo "  3. 手動でプッシュ: git push"
+fi
 ```
 
 ## 重要なルール
@@ -410,6 +493,7 @@ echo "  3. git push でリモートに反映"
 - **意味のあるメッセージ**: 各コミットが何を変更したかを明確に記述
 - **ファイルタイプの考慮**: 設定ファイル、ドキュメント、コード、テストを適切に分離
 - **レビュー性の向上**: 1つのコミットで1つの論理的変更を実現
+- **自動プッシュ**: 各コミット後にプッシュ選択可能、最終的に全コミットをリモートに反映
 
 ## 使用例
 
@@ -431,5 +515,6 @@ echo "  3. git push でリモートに反映"
 ## 注意事項
 - 実行前に重要な変更はバックアップを取ってください
 - `git add -p` を使用する際は、パッチの内容をよく確認してください
-- コミット分割後は `git log` でコミット履歴を確認してください
+- 各コミット後にプッシュするかどうかを選択できます
+- 最終的にすべてのコミットがリモートに反映されます
 - リモートにプッシュ済みのコミットは分割しないでください

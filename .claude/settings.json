@@ -3,6 +3,7 @@
         "allow": [
             "Bash(cat:*)",
             "Bash(cp:*)",
+            "Bash(CURRENT_BRANCH=$(git branch --show-current):*)",
             "Bash(echo:*)",
             "Bash(find:*)",
             "Bash(head:*)",
@@ -21,7 +22,23 @@
             "Bash(git log:*)",
             "Bash(git ls-remote:*)",
             "Bash(git push:*)",
+            "Bash(git reset:*)",
+            "Bash(git diff:*)",
+            "Bash(git stash:*)",
+            "Bash(git status:*)",
+            "Bash(git fetch:*)",
+            "Bash(git show-ref:*)",
+            "Bash(git rev-list:*)",
             "Bash(git rm:*)",
+            "Bash(nl:*)",
+            "Bash(wc:*)",
+            "Bash(dirname:*)",
+            "Bash(basename:*)",
+            "Bash(sed:*)",
+            "Bash(awk:*)",
+            "Bash(sort:*)",
+            "Bash(uniq:*)",
+            "Bash(read:*)",
             "Bash(grep:*)",
             "Bash(ls:*)",
             "Bash(mkdir:*)",
@@ -29,7 +46,33 @@
             "Bash(rg:*)",
             "Bash(tail:*)",
             "Bash(xargs grep:*)",
-            "Read(~/.claude/commands/*.md)"
+            "Bash(osascript:*)",
+            "Bash(date:*)",
+            "Bash(.claude/hooks/task-completion-notify.sh)",
+            "Read(~/.claude/commands/*.md)",
+            "Fetch(https://docs.anthropic.com/*)"
+        ]
+    },
+    "hooks": {
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "/Users/yukitanaami/src/github.com/Doarakko/setup/.claude/hooks/task-completion-notify.sh"
+                    }
+                ]
+            }
+        ],
+        "SubagentStop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "/Users/yukitanaami/src/github.com/Doarakko/setup/.claude/hooks/task-completion-notify.sh"
+                    }
+                ]
+            }
         ]
     }
 }

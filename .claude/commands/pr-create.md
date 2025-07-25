@@ -64,32 +64,65 @@ fi
 
 # PRの説明を生成
 if [ -z "$2" ]; then
-    # コミット履歴から説明を生成
     echo "📝 PR説明を生成中..."
     
     # mainブランチからの変更履歴を取得
     COMMITS=$(git log --oneline master..$CURRENT_BRANCH 2>/dev/null || git log --oneline main..$CURRENT_BRANCH 2>/dev/null || git log --oneline -5)
     
-    PR_BODY="## 概要\n"
-    if [ -n "$PR_TEMPLATE_FILE" ]; then
-        PR_BODY="$PR_BODY\n$(cat $PR_TEMPLATE_FILE)\n\n"
-    fi
-    
-    PR_BODY="$PR_BODY## 変更一覧\n"
-    echo "$COMMITS" | while read commit; do
-        PR_BODY="$PR_BODY- $commit\n"
-    done
-    
-    # 変更されたファイルの概要
+    # 変更されたファイルの一覧を取得
     CHANGED_FILES=$(git diff --name-only master..$CURRENT_BRANCH 2>/dev/null || git diff --name-only main..$CURRENT_BRANCH 2>/dev/null || git diff --name-only HEAD~5..HEAD)
-    if [ -n "$CHANGED_FILES" ]; then
-        PR_BODY="$PR_BODY\n## 変更されたファイル\n"
-        echo "$CHANGED_FILES" | while read file; do
-            PR_BODY="$PR_BODY- $file\n"
-        done
-    fi
     
-    PR_BODY="$PR_BODY\n## テスト計画\n- [ ] 手動テスト実行\n- [ ] 自動テスト確認\n\n## チェックリスト\n- [ ] コードレビュー準備完了\n- [ ] ドキュメント更新（必要に応じて）\n- [ ] 破壊的変更の確認"
+    if [ -n "$PR_TEMPLATE_FILE" ]; then
+        echo "📋 PRテンプレートをベースに説明を生成します"
+        # PRテンプレートをベースとして使用
+        PR_BODY=$(cat "$PR_TEMPLATE_FILE")
+        
+        # テンプレート内の特定のプレースホルダーを置換
+        # 概要セクションに変更内容を自動挿入
+        if echo "$PR_BODY" | grep -q "## 概要\|## Overview\|## Summary"; then
+            # 概要セクションの後に変更内容を挿入
+            PR_BODY=$(echo "$PR_BODY" | sed '/## 概要\|## Overview\|## Summary/a\\n**このPRの主な変更:**')
+            if [ -n "$COMMITS" ]; then
+                COMMIT_LIST=""
+                echo "$COMMITS" | while read commit; do
+                    COMMIT_LIST="$COMMIT_LIST- $commit\n"
+                done
+                PR_BODY="$PR_BODY\n$COMMIT_LIST"
+            fi
+        fi
+        
+        # 変更されたファイルの情報を追加（テンプレートに該当セクションがない場合）
+        if ! echo "$PR_BODY" | grep -q "変更.*ファイル\|Changed.*Files\|Files.*Changed"; then
+            if [ -n "$CHANGED_FILES" ]; then
+                PR_BODY="$PR_BODY\n\n## 変更されたファイル\n"
+                echo "$CHANGED_FILES" | while read file; do
+                    PR_BODY="$PR_BODY- $file\n"
+                done
+            fi
+        fi
+    else
+        echo "📝 デフォルト形式でPR説明を生成します"
+        # PRテンプレートがない場合のデフォルト形式
+        PR_BODY="## 概要\n\n<!-- この変更の目的と概要を記述してください -->\n\n"
+        
+        if [ -n "$COMMITS" ]; then
+            PR_BODY="$PR_BODY## 変更一覧\n"
+            echo "$COMMITS" | while read commit; do
+                PR_BODY="$PR_BODY- $commit\n"
+            done
+            PR_BODY="$PR_BODY\n"
+        fi
+        
+        if [ -n "$CHANGED_FILES" ]; then
+            PR_BODY="$PR_BODY## 変更されたファイル\n"
+            echo "$CHANGED_FILES" | while read file; do
+                PR_BODY="$PR_BODY- $file\n"
+            done
+            PR_BODY="$PR_BODY\n"
+        fi
+        
+        PR_BODY="$PR_BODY## テスト計画\n- [ ] 手動テスト実行\n- [ ] 自動テスト確認\n\n## チェックリスト\n- [ ] コードレビュー準備完了\n- [ ] ドキュメント更新（必要に応じて）\n- [ ] 破壊的変更の確認"
+    fi
 else
     PR_BODY="$2"
     echo "📝 指定された説明を使用"
@@ -128,12 +161,17 @@ fi
 
 ## 重要なルール
 - **必ずドラフト状態で作成**: コードレビューの準備ができるまでドラフト状態を維持
-- **PRテンプレートに従う**: `.github/PULL_REQUEST_TEMPLATE.md` が存在する場合は内容を含める
+- **PRテンプレートをベースに使用**: `.github/PULL_REQUEST_TEMPLATE.md` が存在する場合は、その構造を基本として使用し、変更内容を自動で挿入
 - **適切なpush**: `git push -u origin <branch_name>` のように `--set-upstream` を指定
 - **意味のあるタイトル**: コミットメッセージや機能の概要を反映
 
+## PRテンプレート活用の詳細
+- **テンプレートがある場合**: テンプレートの構造を維持し、概要セクションに変更内容を自動挿入
+- **テンプレートがない場合**: デフォルトの構造（概要、変更一覧、テスト計画、チェックリスト）を使用
+- **多言語対応**: 英語・日本語の一般的なセクション名に対応（Overview/概要、Summary/概要、Changed Files/変更されたファイル）
+
 ## 注意事項
-- PRテンプレートが存在する場合は、その形式に従ってください
+- PRテンプレートの既存構造を尊重し、必要な項目は自動補完します
 - コミットメッセージは意味のある内容にしてください
 - 破壊的変更がある場合は説明に明記してください
 - レビュアーの追加は手動で行ってください

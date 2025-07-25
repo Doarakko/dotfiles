@@ -27,9 +27,13 @@
 - `git push -u origin <branch_name>` でプッシュ
 - GitHub CLI認証状態を確認
 - プライベートリポジトリの場合、認証エラー時はフォールバック処理を実行
+- PRテンプレートの確認：
+  - `.github/PULL_REQUEST_TEMPLATE.md` または `.github/pull_request_template.md` を検索
+  - テンプレートが存在する場合は、その構造をベースとして使用
+  - 概要セクション（## 概要/## Overview/## Summary）に変更内容を自動挿入
+  - 変更ファイル情報も適切なセクションに追加
 - `gh pr create --draft` でドラフトPRを作成
 - 認証エラーの場合、手動PR作成URLを提供
-- .github/PULL_REQUEST_TEMPLATE.md に従ってPR本文を作成
 
 ## パラメータ
 - branch_name: 作成するブランチ名（feature/で始まる）
@@ -41,6 +45,8 @@
 - コミット分割は論理的な変更単位を意識する
 - プライベートリポジトリでは認証スコープ不足時に自動フォールバック
 - GitHub CLIエラー時は手動PR作成用のURLを提供する
+- PRテンプレートがある場合は、既存の構造を尊重しつつ必要な情報を自動補完
+- 多言語対応：英語・日本語の一般的なセクション名に対応
 
 ## エラーハンドリング
 ### GitHub CLI認証エラー

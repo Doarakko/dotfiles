@@ -25,7 +25,10 @@
 
 ### 4. プッシュとPR作成
 - `git push -u origin <branch_name>` でプッシュ
+- GitHub CLI認証状態を確認
+- プライベートリポジトリの場合、認証エラー時はフォールバック処理を実行
 - `gh pr create --draft` でドラフトPRを作成
+- 認証エラーの場合、手動PR作成URLを提供
 - .github/PULL_REQUEST_TEMPLATE.md に従ってPR本文を作成
 
 ## パラメータ
@@ -36,3 +39,16 @@
 - 実装とテストが含まれる場合、typeはfeat/fixを優先
 - PRはDraftで作成し、レビュー準備ができてからDraftを外す
 - コミット分割は論理的な変更単位を意識する
+- プライベートリポジトリでは認証スコープ不足時に自動フォールバック
+- GitHub CLIエラー時は手動PR作成用のURLを提供する
+
+## エラーハンドリング
+### GitHub CLI認証エラー
+- プライベートリポジトリで "Could not resolve to a Repository" エラーが発生した場合
+- 以下の手動PR作成URLを提供：
+  `https://github.com/{owner}/{repo}/compare/{base}...{branch}`
+- 必要に応じて認証の再設定を案内
+
+### 認証スコープ不足
+- GITHUB_TOKEN環境変数使用時は、十分なスコープ(repo, read:org)が必要
+- 環境変数未設定の場合は `gh auth refresh -s repo,read:org` で再認証

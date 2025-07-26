@@ -8,6 +8,7 @@
       "Bash(echo:*)",
       "Bash(find:*)",
       "Bash(head:*)",
+      "Bash(gemini:*)",
       "Bash(gh api:*)",
       "Bash(gh issue create:*)",
       "Bash(gh issue edit:*)",

@@ -9,10 +9,11 @@
 
 ## 動作
 1. メインブランチ名を自動検出（main または master）
-2. 作業中の変更を確認
+2. 作業中の変更を確認し、あれば自動的にstashで一時保存
 3. メインブランチに切り替え
 4. リモートから最新の変更を取得（pull）
-5. 更新後の状態を表示
+5. stashした変更を自動復元
+6. 更新後の状態を表示
 
 ## 実装
 
@@ -59,18 +60,25 @@ echo "📌 現在のブランチ: $CURRENT_BRANCH"
 echo "🎯 メインブランチ: $MAIN_BRANCH"
 
 # 作業ツリーに変更があるか確認
-if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+STASH_NEEDED=false
+if ! git diff-index --quiet HEAD -- 2>/dev/null || [ -n "$(git ls-files --others --exclude-standard)" ]; then
     echo ""
-    echo "⚠️  作業ツリーに未コミットの変更があります"
+    echo "📝 未コミットの変更を検出しました"
     echo ""
-    echo "💡 変更を確認:"
+    echo "💡 変更内容:"
     git status --short
     echo ""
-    echo "以下のいずれかを実行してください:"
-    echo "- git stash      (変更を一時保存)"
-    echo "- git commit -am \"メッセージ\"  (変更をコミット)"
-    echo "- git reset --hard  (変更を破棄 ⚠️ 注意)"
-    exit 1
+    echo "🔄 変更を一時保存（stash）します..."
+    
+    # stashにメッセージ付きで保存
+    STASH_MSG="Auto-stash by branch-main command from $CURRENT_BRANCH"
+    if git stash push -m "$STASH_MSG" --include-untracked; then
+        STASH_NEEDED=true
+        echo "✅ 変更を一時保存しました"
+    else
+        echo "❌ 変更の一時保存に失敗しました"
+        exit 1
+    fi
 fi
 
 # 既にメインブランチにいる場合
@@ -117,6 +125,27 @@ if git pull origin $MAIN_BRANCH; then
         echo ""
         echo "💡 元のブランチに戻るには: git checkout $CURRENT_BRANCH"
     fi
+    
+    # stashした変更を復元
+    if [ "$STASH_NEEDED" = true ]; then
+        echo ""
+        echo "🔄 一時保存した変更を復元中..."
+        if git stash pop; then
+            echo "✅ 変更を復元しました"
+            echo ""
+            echo "📝 復元された変更:"
+            git status --short
+        else
+            echo "⚠️  変更の復元中にコンフリクトが発生しました"
+            echo ""
+            echo "💡 手動で解決してください:"
+            echo "1. コンフリクトのあるファイルを編集"
+            echo "2. git add <ファイル名> でステージング"
+            echo "3. git stash drop で不要なstashを削除"
+            echo ""
+            echo "📋 stashリストを確認: git stash list"
+        fi
+    fi
 else
     echo ""
     echo "❌ 更新中にエラーが発生しました"
@@ -139,6 +168,18 @@ else
         echo "2. git add <ファイル名> で解決済みファイルをステージング"
         echo "3. git commit でマージを完了"
     fi
+    
+    # エラーが発生してもstashした変更を復元
+    if [ "$STASH_NEEDED" = true ]; then
+        echo ""
+        echo "🔄 一時保存した変更を復元中..."
+        if git stash pop; then
+            echo "✅ 変更を復元しました"
+        else
+            echo "⚠️  変更の復元中にコンフリクトが発生しました"
+            echo "📋 stashリストを確認: git stash list"
+        fi
+    fi
     exit 1
 fi
 
@@ -152,13 +193,15 @@ echo "- 特定のブランチに切り替え: git checkout <ブランチ名>"
 ## 特徴
 - **メインブランチ自動検出**: main/masterを自動的に判別
 - **自動ブランチ切り替え**: メインブランチへの自動切り替え
-- **安全性重視**: 未コミットの変更がある場合は警告
+- **自動stash機能**: 未コミットの変更を自動的に一時保存・復元
+- **追跡ファイル対応**: 新規ファイル（untracked）も含めてstash
 - **わかりやすい状態表示**: 更新後の状態と元のブランチとの差分を表示
 - **視覚的なフィードバック**: 絵文字を使用した進行状況の表示
-- **エラーハンドリング**: 各ステップでの適切なエラー処理
+- **エラーハンドリング**: 各ステップでの適切なエラー処理とstash復元
 
 ## 注意事項
-- 作業中の変更は事前にコミットまたはstashしてください
+- 作業中の変更は自動的にstashされ、更新後に復元されます
+- stash復元時にコンフリクトが発生した場合は手動解決が必要です
 - 異なるブランチから実行した場合、元のブランチに戻る方法を表示します
 - 更新後は必要に応じて新しいブランチを作成して作業を開始してください
 

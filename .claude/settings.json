@@ -32,6 +32,7 @@
       "Bash(git fetch:*)",
       "Bash(git show-ref:*)",
       "Bash(git rev-list:*)",
+      "Bash(git rev-parse:*)",
       "Bash(git rm:*)",
       "Bash(nl:*)",
       "Bash(wc:*)",

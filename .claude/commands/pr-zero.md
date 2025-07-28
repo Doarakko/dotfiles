@@ -28,7 +28,11 @@
 - GitHub CLI認証状態を確認
 - プライベートリポジトリの場合、認証エラー時はフォールバック処理を実行
 - PRテンプレートの確認：
-  - `.github/PULL_REQUEST_TEMPLATE.md` または `.github/pull_request_template.md` を検索
+  - 以下の順序で検索：
+    1. `.github/PULL_REQUEST_TEMPLATE.md`
+    2. `.github/pull_request_template.md`
+    3. `.github/PULL_REQUEST_TEMPLATE/*.md`
+    4. `find . -name "*PULL_REQUEST_TEMPLATE*" -o -name "*pull_request_template*"`
   - テンプレートが存在する場合は、その構造をベースとして使用
   - 概要セクション（## 概要/## Overview/## Summary）に変更内容を自動挿入
   - 変更ファイル情報も適切なセクションに追加

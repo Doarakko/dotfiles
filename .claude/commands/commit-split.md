@@ -95,7 +95,7 @@ echo "📊 ファイルタイプ別統計:"
 
 ### ステップ4: 分割方式の決定
 ```bash
-SPLIT_MODE="${2:-interactive}"
+SPLIT_MODE="${2:-file}"
 
 case "$SPLIT_MODE" in
     "file")
@@ -142,40 +142,11 @@ commit_by_file() {
             
             COMMIT_MSG="$PREFIX: update $FILE_NAME"
             
-            # ユーザーに確認
+            # 自動でコミット（確認なし）
             echo "💬 提案されたコミットメッセージ: $COMMIT_MSG"
-            read -p "🤔 このファイルをコミットしますか？ (y/n/e=編集): " choice
-            
-            case "$choice" in
-                y|Y)
-                    git add "$file"
-                    git commit -m "$COMMIT_MSG"
-                    echo "✅ コミット完了: $file"
-                    # 各コミット後にpush実行を確認
-                    read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
-                    if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
-                        auto_push_changes
-                    fi
-                    ;;
-                e|E)
-                    read -p "📝 コミットメッセージを入力: " custom_msg
-                    if [ -n "$custom_msg" ]; then
-                        git add "$file"
-                        git commit -m "$custom_msg"
-                        echo "✅ コミット完了: $file"
-                        # 各コミット後にpush実行を確認
-                        read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
-                        if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
-                            auto_push_changes
-                        fi
-                    else
-                        echo "⏭️  スキップ: $file"
-                    fi
-                    ;;
-                *)
-                    echo "⏭️  スキップ: $file"
-                    ;;
-            esac
+            git add "$file"
+            git commit -m "$COMMIT_MSG"
+            echo "✅ コミット完了: $file"
         fi
     done
 }
@@ -221,38 +192,9 @@ commit_by_feature() {
                 COMMIT_MSG="$PREFIX: update $dir module"
                 
                 echo "💬 提案されたコミットメッセージ: $COMMIT_MSG"
-                read -p "🤔 このディレクトリの変更をコミットしますか？ (y/n/e=編集): " choice
-                
-                case "$choice" in
-                    y|Y)
-                        echo "$DIR_FILES" | xargs git add
-                        git commit -m "$COMMIT_MSG"
-                        echo "✅ コミット完了: $dir"
-                        # 各コミット後にpush実行を確認
-                        read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
-                        if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
-                            auto_push_changes
-                        fi
-                        ;;
-                    e|E)
-                        read -p "📝 コミットメッセージを入力: " custom_msg
-                        if [ -n "$custom_msg" ]; then
-                            echo "$DIR_FILES" | xargs git add
-                            git commit -m "$custom_msg"
-                            echo "✅ コミット完了: $dir"
-                            # 各コミット後にpush実行を確認
-                            read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
-                            if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
-                                auto_push_changes
-                            fi
-                        else
-                            echo "⏭️  スキップ: $dir"
-                        fi
-                        ;;
-                    *)
-                        echo "⏭️  スキップ: $dir"
-                        ;;
-                esac
+                echo "$DIR_FILES" | xargs git add
+                git commit -m "$COMMIT_MSG"
+                echo "✅ コミット完了: $dir"
             fi
         fi
     done
@@ -262,78 +204,22 @@ commit_by_feature() {
 ### ステップ7: インタラクティブ分割の実装
 ```bash
 commit_interactive() {
-    echo "🎮 インタラクティブモードでコミットを分割します"
-    echo "💡 Tip: 'q'で終了、'h'でヘルプ表示"
-    echo ""
+    echo "🎮 自動モードでコミットを分割します"
     
-    while true; do
-        # 現在の状態を表示
-        REMAINING_UNSTAGED=$(git diff --name-only)
-        REMAINING_STAGED=$(git diff --cached --name-only)
-        
-        if [ -z "$REMAINING_UNSTAGED" ] && [ -z "$REMAINING_STAGED" ]; then
-            echo "🎉 すべての変更が処理されました！"
-            break
-        fi
-        
-        echo "📊 現在の状態:"
-        [ -n "$REMAINING_UNSTAGED" ] && echo "📝 未ステージ: $(echo "$REMAINING_UNSTAGED" | wc -l) ファイル"
-        [ -n "$REMAINING_STAGED" ] && echo "📦 ステージ済み: $(echo "$REMAINING_STAGED" | wc -l) ファイル"
-        echo ""
-        
-        echo "🔧 利用可能なアクション:"
-        echo "1. 📂 ファイルを選択してステージ/アンステージ"
-        echo "2. 📦 現在ステージされた変更をコミット"
-        echo "3. 🔍 差分を確認"
-        echo "4. 🎯 git add -p でパッチ選択"
-        echo "5. 🔄 git reset でリセット"
-        echo "h. ヘルプ表示"
-        echo "q. 終了"
-        echo ""
-        
-        read -p "🤔 アクションを選択 (1-5/h/q): " action
-        
-        case "$action" in
-            1)
-                select_files_for_staging
-                ;;
-            2)
-                commit_staged_changes
-                ;;
-            3)
-                show_diff_summary
-                ;;
-            4)
-                echo "🎯 パッチ選択モードを開始..."
-                git add -p
-                ;;
-            5)
-                echo "🔄 リセットオプション:"
-                echo "  a. すべてをアンステージ (git reset)"
-                echo "  f. ファイル指定でアンステージ"
-                read -p "選択: " reset_option
-                case "$reset_option" in
-                    a) git reset ;;
-                    f) 
-                        git diff --cached --name-only
-                        read -p "アンステージするファイル名: " filename
-                        git reset "$filename"
-                        ;;
-                esac
-                ;;
-            h)
-                show_help
-                ;;
-            q)
-                echo "👋 コミット分割を終了します"
-                break
-                ;;
-            *)
-                echo "❌ 無効な選択です"
-                ;;
-        esac
-        echo ""
-    done
+    # 現在の状態を確認
+    REMAINING_UNSTAGED=$(git diff --name-only)
+    REMAINING_STAGED=$(git diff --cached --name-only)
+    
+    if [ -z "$REMAINING_UNSTAGED" ] && [ -z "$REMAINING_STAGED" ]; then
+        echo "📝 変更がありません"
+        return
+    fi
+    
+    # 全ファイルをステージして一度にコミット
+    git add .
+    commit_staged_changes
+    
+    echo "🎉 すべての変更が処理されました！"
 }
 
 select_files_for_staging() {
@@ -347,10 +233,8 @@ select_files_for_staging() {
     echo "$ALL_CHANGED" | nl
     echo ""
     
-    read -p "📝 ステージするファイル番号（複数可、スペース区切り）: " file_numbers
-    
-    for num in $file_numbers; do
-        file=$(echo "$ALL_CHANGED" | sed -n "${num}p")
+    # 全ファイルを自動でステージ
+    echo "$ALL_CHANGED" | while read -r file; do
         if [ -n "$file" ]; then
             git add "$file"
             echo "✅ ステージ完了: $file"
@@ -369,18 +253,10 @@ commit_staged_changes() {
     echo "$STAGED" | sed 's/^/  - /'
     echo ""
     
-    read -p "📝 コミットメッセージを入力: " commit_msg
-    if [ -n "$commit_msg" ]; then
-        git commit -m "$commit_msg"
-        echo "✅ コミット完了！"
-        # コミット後にpush実行を確認
-        read -p "📤 この変更をすぐにプッシュしますか？ (y/n): " push_choice
-        if [ "$push_choice" = "y" ] || [ "$push_choice" = "Y" ]; then
-            auto_push_changes
-        fi
-    else
-        echo "❌ コミットメッセージが空のためキャンセルしました"
-    fi
+    # 自動でコミット
+    commit_msg="update: staged changes"
+    git commit -m "$commit_msg"
+    echo "✅ コミット完了！"
 }
 
 show_diff_summary() {
@@ -454,7 +330,7 @@ echo "📈 作成されたコミット:"
 git log --oneline -10
 
 echo ""
-echo "📤 リモートブランチにプッシュ中..."
+echo "📤 自動プッシュを実行します..."
 
 # 現在のブランチ名を取得
 CURRENT_BRANCH=$(git branch --show-current)
@@ -470,22 +346,8 @@ else
     echo "✅ 新しいブランチを作成してプッシュ完了: $CURRENT_BRANCH"
 fi
 
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "🚀 すべてのコミットがリモートに反映されました！"
-    echo ""
-    echo "💡 次のステップ:"
-    echo "  1. PR作成: /pr-create"
-    echo "  2. コミット履歴確認: git log --oneline"
-    echo "  3. 必要に応じてgit rebase -i でコミットを調整"
-else
-    echo ""
-    echo "⚠️  プッシュでエラーが発生しました"
-    echo "💡 対処法:"
-    echo "  1. リモートの最新を取得: git fetch origin"
-    echo "  2. 必要に応じてrebase: git rebase origin/main"
-    echo "  3. 手動でプッシュ: git push"
-fi
+echo ""
+echo "🚀 すべてのコミットがリモートに反映されました！"
 ```
 
 ## 重要なルール

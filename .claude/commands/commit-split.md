@@ -265,11 +265,10 @@ show_diff_summary() {
     echo ""
     git diff --cached --stat
     echo ""
-    read -p "📖 詳細な差分を表示しますか？ (y/n): " show_detail
-    if [ "$show_detail" = "y" ] || [ "$show_detail" = "Y" ]; then
-        git diff
-        git diff --cached
-    fi
+    # 詳細な差分を自動的に表示
+    echo "📖 詳細な差分:"
+    git diff
+    git diff --cached
 }
 
 auto_push_changes() {

@@ -53,11 +53,7 @@ if [[ "$INPUT" =~ ^[0-9]+$ ]]; then
   
   if [ "$PR_STATE" = "CLOSED" ] || [ "$PR_STATE" = "MERGED" ]; then
     echo "⚠️  警告: PR #$PR_NUMBER は既に $PR_STATE されています"
-    echo "それでもブランチ '$BRANCH_NAME' に切り替えますか? (y/n)"
-    read -r CONTINUE
-    if [ "$CONTINUE" != "y" ] && [ "$CONTINUE" != "Y" ]; then
-      exit 0
-    fi
+    echo "ブランチ '$BRANCH_NAME' に切り替えます..."
   fi
   
   echo "📋 PR #$PR_NUMBER のブランチ: $BRANCH_NAME"
@@ -78,27 +74,9 @@ if ! git diff --quiet || ! git diff --staged --quiet; then
   echo "⚠️  未コミットの変更があります:"
   git status --short
   echo ""
-  echo "変更を保存しますか?"
-  echo "1) stashに保存して切り替え"
-  echo "2) 変更を破棄して切り替え"
-  echo "3) キャンセル"
-  read -r -p "選択してください (1-3): " choice
-  
-  case $choice in
-    1)
-      echo "📦 変更をstashに保存中..."
-      git stash push -m "Auto-stash before switching to $BRANCH_NAME"
-      ;;
-    2)
-      echo "⚠️  変更を破棄します..."
-      git reset --hard
-      git clean -fd
-      ;;
-    *)
-      echo "❌ キャンセルしました"
-      exit 1
-      ;;
-  esac
+  echo "📦 変更をstashに自動保存して切り替えます..."
+  git stash push -m "Auto-stash before switching to $BRANCH_NAME"
+  STASHED=true
 fi
 
 # ブランチが存在するかチェック
@@ -114,15 +92,8 @@ else
   # ブランチが存在しない場合
   echo "❌ Error: ブランチ '$BRANCH_NAME' が見つかりません"
   echo ""
-  echo "新しいブランチを作成しますか? (y/n)"
-  read -r CREATE_NEW
-  
-  if [ "$CREATE_NEW" = "y" ] || [ "$CREATE_NEW" = "Y" ]; then
-    echo "🌱 新しいブランチ '$BRANCH_NAME' を作成中..."
-    git checkout -b "$BRANCH_NAME"
-  else
-    exit 1
-  fi
+  echo "🌱 新しいブランチ '$BRANCH_NAME' を作成中..."
+  git checkout -b "$BRANCH_NAME"
 fi
 
 if [ $? -eq 0 ]; then
@@ -144,7 +115,7 @@ if [ $? -eq 0 ]; then
   fi
   
   # stashがある場合は通知
-  if [ "$choice" = "1" ]; then
+  if [ "$STASHED" = "true" ]; then
     echo ""
     echo "💡 stashに保存した変更を復元するには: git stash pop"
   fi

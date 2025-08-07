@@ -103,7 +103,7 @@ if [ -z "$2" ]; then
     else
         echo "📝 デフォルト形式でPR説明を生成します"
         # PRテンプレートがない場合のデフォルト形式
-        PR_BODY="## 概要\n\n<!-- この変更の目的と概要を記述してください -->\n\n"
+        PR_BODY="## 概要\n\nこの変更の目的と概要を記述してください\n\n"
         
         if [ -n "$COMMITS" ]; then
             PR_BODY="$PR_BODY## 変更一覧\n"
@@ -135,7 +135,11 @@ fi
 echo "🚀 ドラフトPRを作成中..."
 
 # PRを作成（HEREDOCを使用して適切にフォーマット）
-gh pr create --draft --title "$PR_TITLE" --body "$(echo -e "$PR_BODY")"
+# bodyにHTMLコメントが含まれる場合の対応
+PR_BODY_FILE=$(mktemp)
+echo -e "$PR_BODY" > "$PR_BODY_FILE"
+gh pr create --draft --title "$PR_TITLE" --body-file "$PR_BODY_FILE"
+rm -f "$PR_BODY_FILE"
 
 if [ $? -eq 0 ]; then
     echo "✅ ドラフトPRが正常に作成されました！"

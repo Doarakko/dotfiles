@@ -13,6 +13,13 @@ cd dotfiles
 rm -rf ~/.claude && ln -s ~/src/dotfiles/.claude ~/.claude
 ```
 
+### MCP Server
+
+- serena
+- Gemini
+- Playwright
+- Figma
+
 ## application
 
 - 1Password7

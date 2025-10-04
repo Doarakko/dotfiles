@@ -4,3 +4,5 @@
 .claude/todos
 .claude/statsig
 .claude/plugins/config.json
+history.jsonl
+.claude/file-history

@@ -5,7 +5,6 @@
     "allow": [
       "Bash(cat:*)",
       "Bash(cp:*)",
-      "Bash(CURRENT_BRANCH=$(git branch --show-current):*)",
       "Bash(echo:*)",
       "Bash(find:*)",
       "Bash(head:*)",

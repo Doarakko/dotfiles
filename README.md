@@ -13,12 +13,22 @@ cd dotfiles
 rm -rf ~/.claude && ln -s ~/src/dotfiles/.claude ~/.claude
 ```
 
+#### Subagents
+
+[VoltAgent/awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)
+
+```bash
+cd ~/src/dotfiles
+./update-subagents.sh
+```
+
 ### MCP Server
 
 - serena
 - Gemini
 - Playwright
 - Figma
+- [Chrome DevTools](https://github.com/ChromeDevTools/chrome-devtools-mcp)
 
 ## application
 

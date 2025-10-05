@@ -167,6 +167,21 @@ echo "$FAILED_PRS" | while IFS= read -r pr_json; do
     fi
   fi
 
+  # メジャーバージョンアップの確認
+  PR_DIFF=$(gh pr diff "$PR_NUMBER" 2>/dev/null || echo "")
+  if echo "$PR_DIFF" | grep -qE '^\-.*"[^"]+": *"[0-9]+\.[0-9]+'; then
+    OLD_VER=$(echo "$PR_DIFF" | grep -E '^\-.*"[^"]+": *"[0-9]+\.[0-9]+' | head -1 | sed -E 's/.*"([0-9]+)\..*/\1/')
+    NEW_VER=$(echo "$PR_DIFF" | grep -E '^\+.*"[^"]+": *"[0-9]+\.[0-9]+' | head -1 | sed -E 's/.*"([0-9]+)\..*/\1/')
+    PACKAGE=$(echo "$PR_DIFF" | grep -E '^\+.*"[^"]+": *"[0-9]+\.[0-9]+' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+
+    if [ "$OLD_VER" != "$NEW_VER" ] && [ -n "$PACKAGE" ]; then
+      echo "  ⚠️  メジャーバージョンアップ: $PACKAGE ($OLD_VER.x → $NEW_VER.x)"
+      echo "  🔍 マイグレーションガイドを確認中..."
+      /gemini-search "$PACKAGE version $NEW_VER migration guide" 2>/dev/null | head -10 || true
+      echo ""
+    fi
+  fi
+
   # 変更があればコミット
   if [ -n "$(git status --porcelain)" ]; then
     echo "  💾 変更をコミット中..."
@@ -181,8 +196,42 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
     # プッシュ
     echo "  📤 リモートにプッシュ中..."
     if git push origin "$PR_BRANCH"; then
-      echo "  ✅ 修正完了"
-      SUCCESS_PRS+=("#${PR_NUMBER}: ${PR_TITLE}")
+      echo "  ✅ プッシュ完了"
+
+      # CI結果を待機して確認
+      echo "  ⏳ CI実行を待機中（最大5分）..."
+      sleep 30  # 初回実行開始を待つ
+
+      TIMEOUT=270  # 残り4分30秒
+      INTERVAL=30
+      CI_PASSED=false
+
+      while [ $TIMEOUT -gt 0 ]; do
+        CI_STATUS=$(gh pr checks "$PR_NUMBER" --json state,conclusion 2>/dev/null || echo "")
+
+        # すべてのチェックが完了しているか確認
+        if echo "$CI_STATUS" | jq -e 'all(.state == "COMPLETED")' >/dev/null 2>&1; then
+          # すべて成功しているか確認
+          if echo "$CI_STATUS" | jq -e 'all(.conclusion == "SUCCESS")' >/dev/null 2>&1; then
+            echo "  ✅ CI成功"
+            CI_PASSED=true
+            SUCCESS_PRS+=("#${PR_NUMBER}: ${PR_TITLE} ✓")
+            break
+          else
+            echo "  ❌ CI失敗"
+            FAILED_FIX_PRS+=("#${PR_NUMBER}: ${PR_TITLE} (CI失敗)")
+            break
+          fi
+        fi
+
+        sleep $INTERVAL
+        TIMEOUT=$((TIMEOUT - INTERVAL))
+      done
+
+      if [ "$CI_PASSED" = false ] && [ $TIMEOUT -le 0 ]; then
+        echo "  ⏱️  CI確認タイムアウト"
+        FAILED_FIX_PRS+=("#${PR_NUMBER}: ${PR_TITLE} (CI確認中)")
+      fi
     else
       echo "  ❌ プッシュに失敗"
       FAILED_FIX_PRS+=("#${PR_NUMBER}: ${PR_TITLE}")

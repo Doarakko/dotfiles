@@ -10,9 +10,8 @@ DependabotのプルリクエストでCIエラーが発生しているものを�
 ## 処理手順
 1. Dependabotが作成したPR一覧を取得
 2. CIが失敗しているPRを特定
-3. READMEや設定ファイルからプロジェクトの修正方法を調査
-4. 各失敗PRに対して自動修正を実行
-5. 修正結果をレポート
+3. 各失敗PRに対してClaudeが修正を実行
+4. 修正結果をレポート
 
 ## 実装
 
@@ -49,44 +48,7 @@ echo "❌ CIエラーが見つかりました: ${FAILED_COUNT}件のPR"
 echo ""
 ```
 
-### ステップ2: プロジェクトの修正方法を調査
-```bash
-echo "🔍 プロジェクトの修正方法を調査中..."
-
-# READMEを読む
-README_CONTENT=""
-if [ -f "README.md" ]; then
-  README_CONTENT=$(cat README.md)
-elif [ -f "README" ]; then
-  README_CONTENT=$(cat README)
-fi
-
-# lintコマンドの特定
-LINT_CMD=""
-if echo "$README_CONTENT" | grep -qi "lint"; then
-  LINT_CMD=$(echo "$README_CONTENT" | grep -i "lint" | head -3)
-fi
-
-# testコマンドの特定
-TEST_CMD=""
-if echo "$README_CONTENT" | grep -qi "test"; then
-  TEST_CMD=$(echo "$README_CONTENT" | grep -i "test" | head -3)
-fi
-
-# buildコマンドの特定
-BUILD_CMD=""
-if echo "$README_CONTENT" | grep -qi "build"; then
-  BUILD_CMD=$(echo "$README_CONTENT" | grep -i "build" | head -3)
-fi
-
-echo "📋 検出された修正方法:"
-[ -n "$LINT_CMD" ] && echo "  Lint: ${LINT_CMD}"
-[ -n "$TEST_CMD" ] && echo "  Test: ${TEST_CMD}"
-[ -n "$BUILD_CMD" ] && echo "  Build: ${BUILD_CMD}"
-echo ""
-```
-
-### ステップ3: 各失敗PRの修正
+### ステップ2: 各失敗PRの修正
 ```bash
 # 元のブランチを保存
 ORIGINAL_BRANCH=$(git branch --show-current)
@@ -131,45 +93,16 @@ echo "$FAILED_PRS" | while IFS= read -r pr_json; do
     echo "    - $check"
   done
 
-  # 修正を実行
-  FIXED=false
-
-  # Lintエラーの修正
-  if echo "$FAILED_CHECKS" | grep -qi "lint"; then
-    echo "  📝 Lintエラーを修正中..."
-
-    # READMEから取得したコマンドを実行（fix付き）
-    if echo "$LINT_CMD" | grep -q "fix"; then
-      eval "$LINT_CMD" 2>/dev/null && FIXED=true
-    fi
-
-    # 一般的なlint fixコマンドも試行
-    if [ -f "Makefile" ] && grep -q "lint" Makefile; then
-      make lint-fix 2>/dev/null && FIXED=true
-    fi
-  fi
-
-  # 依存関係の更新
-  if echo "$FAILED_CHECKS" | grep -qi "build\|dependencies"; then
-    echo "  📦 依存関係を更新中..."
-
-    # Makefileがあれば使用
-    if [ -f "Makefile" ]; then
-      if grep -q "install\|deps" Makefile; then
-        make install 2>/dev/null || make deps 2>/dev/null
-        FIXED=true
-      fi
-    fi
-  fi
-
-  # セキュリティ問題の修正
-  if echo "$FAILED_CHECKS" | grep -qi "security\|audit"; then
-    echo "  🔒 セキュリティ問題を修正中..."
-
-    if [ -f "Makefile" ] && grep -q "audit" Makefile; then
-      make audit-fix 2>/dev/null && FIXED=true
-    fi
-  fi
+  # Claudeに修正を依頼
+  echo "  🤖 Claudeに修正を依頼します"
+  echo ""
+  echo "  失敗したチェック内容に基づいて、以下の修正を行ってください:"
+  echo "$FAILED_CHECKS"
+  echo ""
+  echo "  ⚠️  重要な制約:"
+  echo "    - lintエラー: できる限りignoreコメントを使わず実際のコードを修正すること"
+  echo "    - リポジトリの構成を確認して適切な修正方法を選択すること"
+  echo ""
 
   # メジャーバージョンアップの確認
   PR_DIFF=$(gh pr diff "$PR_NUMBER" 2>/dev/null || echo "")
@@ -286,7 +219,7 @@ echo "✅ Dependabot PR CI修正処理が完了しました"
 
 ## 注意事項
 - GitHub CLIが必要です
-- 修正方法はREADMEやMakefileから自動検出されます
+- Claudeがリポジトリを確認して修正方法を判断します
 - すべてのエラーが自動修正できるわけではありません
 - 複雑なエラーは手動での修正が必要です
 - 修正後、CIの再実行には数分かかる場合があります

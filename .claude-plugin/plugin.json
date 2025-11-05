@@ -1,0 +1,9 @@
+{
+  "name": "doarakko-config",
+  "description": "Productivity commands for branch management, commit splitting, PR workflows, code review, CI/CD automation, and test creation",
+  "version": "1.0.0",
+  "author": {
+    "name": "Doarakko",
+    "email": "2wua4nlyi@gmail.com"
+  }
+}

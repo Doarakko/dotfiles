@@ -3,14 +3,19 @@
 ## Usage
 
 ```bash
+mkdir -p ~/src
+cd ~/src
 git clone https://github.com/Doarakko/dotfiles.git
 cd dotfiles
 ```
 
 ### Claude Code
 
+#### Plugin
+
 ```bash
-rm -rf ~/.claude && ln -s ~/src/dotfiles/.claude ~/.claude
+/plugin marketplace add ~/src/dotfiles
+/plugin install doarakko-config@dotfiles
 ```
 
 #### Subagents

@@ -1,0 +1,18 @@
+{
+  "name": "doarakko-config",
+  "metadata": {
+    "description": "Productivity commands collection for Claude Code",
+    "version": "1.0.0"
+  },
+  "owner": {
+    "name": "Doarakko",
+    "email": "2wua4nlyi@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "doarakko-config",
+      "source": "./.claude",
+      "description": "Productivity commands for branch management, commit splitting, PR workflows, code review, CI/CD automation, and test creation"
+    }
+  ]
+}

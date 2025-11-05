@@ -24,7 +24,7 @@ cd ~/src/dotfiles
 
 ### MCP Server
 
-- serena
+- [serena](https://github.com/oraios/serena)
 - Gemini
 - Playwright
 - Figma

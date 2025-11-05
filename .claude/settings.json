@@ -80,7 +80,7 @@
       "Bash([[:*)",
       "Bash(.claude/hooks/task-completion-notify.sh)",
       "Read(~/.claude/commands/*.md)",
-      "WebFetch(https://docs.anthropic.com/*)"
+      "WebFetch(domain:docs.anthropic.com)"
     ]
   },
   "hooks": {

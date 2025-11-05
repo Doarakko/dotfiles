@@ -6,3 +6,4 @@
 .claude/plugins/config.json
 history.jsonl
 .claude/file-history
+.claude/debug

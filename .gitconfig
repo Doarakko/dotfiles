@@ -3,3 +3,6 @@
         email = 2wua4nlyi@gmail.com
 [core]
         editor = code --wait
+[alias]
+	# delete merged branches
+    delete-mb = "!f () { git checkout $1; git branch --merged|egrep -v '\\*|develop|main|master|production'|xargs git branch -d; };f"

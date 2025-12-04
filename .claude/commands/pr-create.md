@@ -1,6 +1,6 @@
 # プルリクエスト作成コマンド
 
-現在のブランチからプルリクエストを作成します。
+現在の変更から新規ブランチを作成し、プルリクエストを作成します。
 
 ## 使用方法
 ```bash
@@ -8,31 +8,37 @@
 ```
 
 ## 処理手順
-1. 現在のブランチの変更をpush（まだpushされていない場合）
-2. PRテンプレートを読み込み（存在する場合）
-3. コミット履歴から適切なタイトルと説明を生成
-4. ドラフトPRとして作成
-5. PR URLを表示
+1. 現在の変更を確認
+2. 新規ブランチを作成（既存ブランチには絶対にpushしない）
+3. 変更をコミット（未コミットの場合）
+4. 新規ブランチをpush
+5. PRテンプレートを読み込み（存在する場合）
+6. コミット履歴から適切なタイトルと説明を生成
+7. ドラフトPRとして作成
+8. PR URLを表示
 
 ## 実装
 
-### ステップ1: ブランチの状態確認
+### ステップ1: 新規ブランチの作成
 ```bash
 # 現在のブランチ名を取得
-CURRENT_BRANCH=$(git branch --show-current)
-echo "🌿 現在のブランチ: $CURRENT_BRANCH"
+ORIGINAL_BRANCH=$(git branch --show-current)
+echo "🌿 元のブランチ: $ORIGINAL_BRANCH"
 
-# リモートブランチとの同期状態を確認
+# タイムスタンプベースの新規ブランチ名を生成
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+NEW_BRANCH="feature/${TIMESTAMP}"
+echo "🆕 新規ブランチを作成: $NEW_BRANCH"
+
+# 新規ブランチを作成して切り替え
+git checkout -b "$NEW_BRANCH"
+
+# リモートブランチにpush
 git fetch origin
+echo "📤 新規ブランチをリモートにpushします..."
+git push -u origin "$NEW_BRANCH"
 
-# pushが必要かチェック
-UNPUSHED_COMMITS=$(git rev-list --count origin/$CURRENT_BRANCH..$CURRENT_BRANCH 2>/dev/null || echo "new")
-if [ "$UNPUSHED_COMMITS" = "new" ] || [ "$UNPUSHED_COMMITS" -gt 0 ]; then
-    echo "📤 リモートブランチにpushします..."
-    git push -u origin $CURRENT_BRANCH
-else
-    echo "✅ ブランチは既にpushされています"
-fi
+CURRENT_BRANCH="$NEW_BRANCH"
 ```
 
 ### ステップ2: PRテンプレートの確認
@@ -164,6 +170,7 @@ fi
 ```
 
 ## 重要なルール
+- **必ず新規ブランチを作成**: 既存ブランチには絶対にpushしない。必ず新規ブランチを作成してからPRを作成する
 - **必ずドラフト状態で作成**: コードレビューの準備ができるまでドラフト状態を維持
 - **PRテンプレートをベースに使用**: `.github/PULL_REQUEST_TEMPLATE.md` が存在する場合は、その構造を基本として使用し、変更内容を自動で挿入
 - **適切なpush**: `git push -u origin <branch_name>` のように `--set-upstream` を指定

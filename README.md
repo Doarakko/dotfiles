@@ -34,6 +34,7 @@ cd ~/src/dotfiles
 - Playwright
 - Figma
 - [Chrome DevTools](https://github.com/ChromeDevTools/chrome-devtools-mcp)
+- [context7](https://github.com/upstash/context7)
 
 ## application
 

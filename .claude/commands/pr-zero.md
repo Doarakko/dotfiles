@@ -2,6 +2,14 @@
 
 新規ブランチ作成、コミット分割、PR作成を一連で実行するワークフロー
 
+## 使用方法
+```bash
+/pr-zero [説明] [--from-main]
+```
+
+- `--from-main`: メインブランチ（master/main）から新規ブランチを作成
+- 指定なし: 現在のブランチから新規ブランチを作成
+
 ## 重要なルール
 - **必ず新規ブランチを作成**: 既存ブランチには絶対にpushしない。必ず新規ブランチを作成してからPRを作成する
 
@@ -9,6 +17,8 @@
 
 ### 1. 新規ブランチ作成（必須）
 - **既存ブランチには絶対にpushしない**
+- `--from-main`が指定された場合: メインブランチ（master/main）に切り替えてから新規ブランチを作成
+- 指定なしの場合: 現在のブランチから新規ブランチを作成（現在の変更は保持）
 - ブランチ名は [Conventional Branch](https://conventional-branch.github.io/) に従う
 - feature/[FeatureName]-[実装した機能名] の形式
 - 例: `feature/admin-user-role-edit-invite-form`
@@ -46,6 +56,7 @@
 ## パラメータ
 - branch_name: 作成するブランチ名（feature/で始まる）
 - commit_strategy: auto（自動分割）または manual（手動確認）
+- --from-main: メインブランチから新規ブランチを作成するオプション
 
 ## 注意事項
 - **既存ブランチには絶対にpushしない。必ず新規ブランチを作成すること**

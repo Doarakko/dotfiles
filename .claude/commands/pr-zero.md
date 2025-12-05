@@ -1,10 +1,14 @@
 # Git Full Workflow - ブランチ作成からPR作成まで
 
-ブランチ作成、コミット分割、PR作成を一連で実行するワークフロー
+新規ブランチ作成、コミット分割、PR作成を一連で実行するワークフロー
+
+## 重要なルール
+- **必ず新規ブランチを作成**: 既存ブランチには絶対にpushしない。必ず新規ブランチを作成してからPRを作成する
 
 ## 実行手順
 
-### 1. ブランチ作成
+### 1. 新規ブランチ作成（必須）
+- **既存ブランチには絶対にpushしない**
 - ブランチ名は [Conventional Branch](https://conventional-branch.github.io/) に従う
 - feature/[FeatureName]-[実装した機能名] の形式
 - 例: `feature/admin-user-role-edit-invite-form`
@@ -44,6 +48,7 @@
 - commit_strategy: auto（自動分割）または manual（手動確認）
 
 ## 注意事項
+- **既存ブランチには絶対にpushしない。必ず新規ブランチを作成すること**
 - 実装とテストが含まれる場合、typeはfeat/fixを優先
 - PRはDraftで作成し、レビュー準備ができてからDraftを外す
 - コミット分割は論理的な変更単位を意識する

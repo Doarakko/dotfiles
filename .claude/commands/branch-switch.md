@@ -98,22 +98,22 @@ fi
 
 if [ $? -eq 0 ]; then
   echo "✅ ブランチ '$BRANCH_NAME' に切り替えました"
-  
+
   # リモートの最新情報を取得
   if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME"; then
     echo ""
     echo "🔄 リモートとの差分をチェック中..."
     git fetch origin "$BRANCH_NAME" --quiet
-    
+
     LOCAL=$(git rev-parse HEAD)
     REMOTE=$(git rev-parse "origin/$BRANCH_NAME" 2>/dev/null)
-    
+
     if [ "$LOCAL" != "$REMOTE" ]; then
       echo "⚠️  リモートブランチとの差分があります"
       echo "   最新の変更を取得するには: git pull"
     fi
   fi
-  
+
   # stashがある場合は通知
   if [ "$STASHED" = "true" ]; then
     echo ""
@@ -124,3 +124,8 @@ else
   exit 1
 fi
 ```
+
+## 絶対に守るべきルール
+- **関係のない変更を消さないこと**：ユーザーの変更はそのままワーキングツリーに残す
+- **git checkout や git restore を使わないこと**：ユーザーの作業内容を破棄する操作は絶対に行わない
+- **git reset を使わないこと**：コミット履歴やステージングを勝手にリセットしない

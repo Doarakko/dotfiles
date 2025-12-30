@@ -1,6 +1,6 @@
 # GitHub PR 自動修正コマンド
 
-PRのレビューコメント(🚀リアクション付き + ボットからのコメント)とCIエラーを自動的に修正します。
+PRのレビューコメントとCIエラーを自動的に修正します。
 
 ## 使用方法
 ```bash
@@ -10,20 +10,21 @@ PRのレビューコメント(🚀リアクション付き + ボットからの�
 PR番号が指定されない場合は、現在のブランチのPRを使用します。
 
 ## 修正対象のコメント
-1. **ボットからのコメント**: 自動で修正対象になります（リアクション不要）
-   - GitHub Actions, CodeRabbit, Dependabot, Renovate 等のボットを自動検出
+1. **🚀リアクション付きコメント**: 必須対応（ボット・人間問わず）
    - 修正後に自動で返信コメントを投稿
-2. **人間からのコメント**: 🚀リアクションを追加したコメントのみ修正対象
+2. **リアクションなしコメント**: 内容を分析して対応が必要か判断
+   - セキュリティ、バグ、型エラーなど重要な指摘は対応
+   - 軽微な提案やスタイルの好みは対応をスキップ可能
 
 ## 処理手順
 1. PRとレビューコメントを取得
-2. ボットからのコメントを自動検出
-3. 🚀リアクション付きの人間コメントを取得
+2. 🚀リアクション付きコメントを必須対応として抽出
+3. リアクションなしコメントを分析し対応要否を判断
 4. CIの失敗状況を確認
 5. レビューコメントの修正を適用
 6. CIエラーを修正
 7. テストとリンティングを実行して検証
-8. ボットコメントに返信を投稿
+8. 🚀リアクション付きコメントに返信を投稿
 9. コミットせずに変更内容の概要を表示
 
 ## 実装
@@ -51,7 +52,7 @@ echo "📋 PR #$PR_NUMBER を修正します"
 echo ""
 ```
 
-### ステップ2: レビューコメントの取得とボット検出
+### ステップ2: レビューコメントの取得と分類
 ```bash
 echo "🔍 レビューコメントを取得中..."
 
@@ -60,52 +61,72 @@ COMMENTS=$(gh api "repos/:owner/:repo/pulls/$PR_NUMBER/comments" 2>/dev/null || 
 
 if [ -z "$COMMENTS" ] || [ "$COMMENTS" = "[]" ]; then
     echo "ℹ️ レビューコメントが見つかりません"
-    BOT_COMMENTS=""
-    HUMAN_COMMENTS=""
+    REQUIRED_COMMENTS=""
+    OPTIONAL_COMMENTS=""
 else
-    # ボットからのコメントを抽出（リアクション不要）
-    # ボット判定: user.type == "Bot" または user.login に [bot] が含まれる
-    BOT_COMMENTS=$(echo "$COMMENTS" | jq -r '[.[] | select(.user.type == "Bot" or (.user.login | test("\\[bot\\]$")))] | .[] | {path: .path, line: .position, body: .body, id: .id, user: .user.login} | @json')
+    # 🚀リアクション付きコメントを必須対応として抽出（ボット・人間問わず）
+    REQUIRED_COMMENTS=$(echo "$COMMENTS" | jq -r '[.[] | select(.reactions.rocket > 0)] | .[] | {path: .path, line: .position, body: .body, id: .id, user: .user.login, isBot: (.user.type == "Bot" or (.user.login | test("\\[bot\\]$")))} | @json')
 
-    # 人間からの🚀リアクション付きコメントを抽出
-    HUMAN_COMMENTS=$(echo "$COMMENTS" | jq -r '[.[] | select(.user.type != "Bot" and (.user.login | test("\\[bot\\]$") | not) and .reactions.rocket > 0)] | .[] | {path: .path, line: .position, body: .body, id: .id, user: .user.login} | @json')
+    # リアクションなしコメントを抽出（対応要否を判断する対象）
+    OPTIONAL_COMMENTS=$(echo "$COMMENTS" | jq -r '[.[] | select(.reactions.rocket == 0 or .reactions.rocket == null)] | .[] | {path: .path, line: .position, body: .body, id: .id, user: .user.login, isBot: (.user.type == "Bot" or (.user.login | test("\\[bot\\]$")))} | @json')
 
-    # ボットコメントの表示
-    if [ -n "$BOT_COMMENTS" ]; then
-        BOT_COUNT=$(echo "$BOT_COMMENTS" | wc -l | tr -d ' ')
-        echo "🤖 ボットからのコメント: ${BOT_COUNT}件（自動修正対象）"
+    # 🚀リアクション付きコメントの表示
+    if [ -n "$REQUIRED_COMMENTS" ]; then
+        REQUIRED_COUNT=$(echo "$REQUIRED_COMMENTS" | wc -l | tr -d ' ')
+        echo "🚀 必須対応コメント: ${REQUIRED_COUNT}件"
         echo ""
-        echo "$BOT_COMMENTS" | jq -r '. | "- [\(.user)] \(.path):\(.line) - \(.body | split("\n")[0])"' | head -20
+        echo "$REQUIRED_COMMENTS" | jq -r '. | "- [\(.user)] \(.path):\(.line) - \(.body | split("\n")[0])"' | head -20
         echo ""
     else
-        echo "ℹ️ ボットからのコメントはありません"
+        echo "ℹ️ 🚀リアクション付きコメントはありません"
     fi
 
-    # 人間コメントの表示
-    if [ -n "$HUMAN_COMMENTS" ]; then
-        HUMAN_COUNT=$(echo "$HUMAN_COMMENTS" | wc -l | tr -d ' ')
-        echo "👤 🚀リアクション付き人間コメント: ${HUMAN_COUNT}件"
+    # リアクションなしコメントの表示
+    if [ -n "$OPTIONAL_COMMENTS" ]; then
+        OPTIONAL_COUNT=$(echo "$OPTIONAL_COMMENTS" | wc -l | tr -d ' ')
+        echo "📋 分析対象コメント: ${OPTIONAL_COUNT}件（対応要否を判断）"
         echo ""
-        echo "$HUMAN_COMMENTS" | jq -r '. | "- [\(.user)] \(.path):\(.line) - \(.body | split("\n")[0])"'
+        echo "$OPTIONAL_COMMENTS" | jq -r '. | "- [\(.user)] \(.path):\(.line) - \(.body | split("\n")[0])"' | head -20
         echo ""
-    else
-        echo "ℹ️ 🚀リアクション付きの人間コメントはありません"
-        echo "💡 人間からのコメントを修正するには🚀リアクションを追加してください"
     fi
 fi
+```
 
-# 全修正対象コメントを統合
+### ステップ2.5: リアクションなしコメントの対応要否判断
+リアクションなしのコメントについて、内容を分析して対応が必要か判断:
+
+**対応が必要な指摘（自動で修正対象に追加）:**
+- セキュリティ脆弱性の指摘
+- バグや不具合の指摘
+- 型エラーや構文エラー
+- パフォーマンス問題
+- 必須の修正提案（suggested change）
+
+**対応をスキップする指摘:**
+- スタイルの好み
+- 軽微なリファクタリング提案
+- 質問やディスカッション
+- 「考慮してください」レベルの提案
+
+```bash
+# 修正対象コメントを統合
 REVIEW_COMMENTS=""
-if [ -n "$BOT_COMMENTS" ]; then
-    REVIEW_COMMENTS="$BOT_COMMENTS"
+if [ -n "$REQUIRED_COMMENTS" ]; then
+    REVIEW_COMMENTS="$REQUIRED_COMMENTS"
 fi
-if [ -n "$HUMAN_COMMENTS" ]; then
-    if [ -n "$REVIEW_COMMENTS" ]; then
-        REVIEW_COMMENTS="$REVIEW_COMMENTS
-$HUMAN_COMMENTS"
-    else
-        REVIEW_COMMENTS="$HUMAN_COMMENTS"
-    fi
+
+# リアクションなしコメントから対応すべきものを選別
+# ※ Claude Code が内容を分析して判断
+if [ -n "$OPTIONAL_COMMENTS" ]; then
+    echo "🤔 リアクションなしコメントを分析中..."
+    echo ""
+    echo "以下のコメントについて対応が必要か判断してください:"
+    echo "$OPTIONAL_COMMENTS" | jq -r '. | "[\(.user)] \(.path):\(.line)\n\(.body)\n---"'
+    echo ""
+    echo "判断基準:"
+    echo "  ✅ 対応すべき: セキュリティ、バグ、型エラー、パフォーマンス問題"
+    echo "  ⏭️ スキップ可: スタイルの好み、軽微な提案、質問"
+    echo ""
 fi
 ```
 
@@ -282,17 +303,17 @@ fi
 echo ""
 ```
 
-### ステップ7: ボットコメントへの自動返信
+### ステップ7: 🚀リアクション付きコメントへの自動返信
 ```bash
-# ボットからのコメントに対して修正完了の返信を投稿
-if [ -n "$BOT_COMMENTS" ] && [ -n "$(git status --porcelain)" ]; then
-    echo "💬 ボットコメントに返信中..."
+# 🚀リアクション付きコメントに対して修正完了の返信を投稿
+if [ -n "$REQUIRED_COMMENTS" ] && [ -n "$(git status --porcelain)" ]; then
+    echo "💬 🚀リアクション付きコメントに返信中..."
     echo ""
 
-    # 各ボットコメントに返信
-    echo "$BOT_COMMENTS" | while read -r comment; do
+    # 各コメントに返信
+    echo "$REQUIRED_COMMENTS" | while read -r comment; do
         COMMENT_ID=$(echo "$comment" | jq -r '.id')
-        BOT_USER=$(echo "$comment" | jq -r '.user')
+        COMMENT_USER=$(echo "$comment" | jq -r '.user')
         COMMENT_PATH=$(echo "$comment" | jq -r '.path')
 
         if [ -n "$COMMENT_ID" ] && [ "$COMMENT_ID" != "null" ]; then
@@ -301,8 +322,8 @@ if [ -n "$BOT_COMMENTS" ] && [ -n "$(git status --porcelain)" ]; then
 
             gh api "repos/:owner/:repo/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \
                 -f body="$REPLY_BODY" 2>/dev/null \
-                && echo "  ✓ $BOT_USER のコメント (ID: $COMMENT_ID) に返信しました" \
-                || echo "  ⚠️ $BOT_USER のコメントへの返信に失敗しました"
+                && echo "  ✓ $COMMENT_USER のコメント (ID: $COMMENT_ID) に返信しました" \
+                || echo "  ⚠️ $COMMENT_USER のコメントへの返信に失敗しました"
         fi
     done
     echo ""
@@ -347,17 +368,24 @@ fi
 ## 修正対象のまとめ
 
 ### レビューコメント修正
-- **ボットコメント**: リアクション不要で自動的に修正対象
-  - 修正後に自動で返信コメントを投稿
-- **人間コメント**: 🚀リアクションがついたコメントのみを対象
-- コードの提案を直接適用
-- スタイル、ロジック、ドキュメント、テストの修正
+| 対象 | 条件 | 対応 | 返信 |
+|------|------|------|------|
+| 🚀リアクション付き | ボット・人間問わず | **必須対応** | ✅ 自動返信 |
+| リアクションなし | 重要な指摘 | 対応する | ❌ 返信なし |
+| リアクションなし | 軽微な提案 | スキップ可 | ❌ 返信なし |
 
-### ボット検出ルール
-以下の条件でボットを自動検出:
-- GitHubユーザータイプが `Bot` のアカウント
-- ユーザー名が `[bot]` で終わるアカウント
-- 例: `github-actions[bot]`, `coderabbitai[bot]`, `dependabot[bot]`, `renovate[bot]`
+### 対応が必要な指摘（リアクションなしでも対応）
+- セキュリティ脆弱性の指摘
+- バグや不具合の指摘
+- 型エラーや構文エラー
+- パフォーマンス問題
+- 必須の修正提案（suggested change）
+
+### 対応をスキップする指摘
+- スタイルの好み
+- 軽微なリファクタリング提案
+- 質問やディスカッション
+- 「考慮してください」レベルの提案
 
 ### CIエラー修正
 1. **リンティングエラー**: 自動修正ツールを実行
@@ -372,8 +400,8 @@ fi
 - 自動修正が不可能な場合は手動修正の必要性を通知
 
 ## 注意事項
-- **ボットコメント**: リアクション不要で自動的に修正対象となり、修正後に返信を投稿
-- **人間コメント**: 修正したいコメントに🚀リアクションを追加してください
+- **🚀リアクション付きコメント**: 必須対応、修正後に自動返信
+- **リアクションなしコメント**: 内容を分析して対応要否を判断
 - すべてのエラーが自動修正できるわけではありません
 - 複雑なロジックエラーは手動での修正が必要です
 - 修正後は必ずローカルでテストを実行して検証してください

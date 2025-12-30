@@ -85,12 +85,22 @@ Modern PHP specialist with expertise in PHP 8+ features, Composer ecosystem, and
 
 **Use when:** Developing PHP applications, modernizing legacy PHP code, implementing PHP APIs, or working with PHP frameworks.
 
+### [**powershell-5.1-expert**](powershell-5.1-expert.md) - Windows PowerShell 5.1 automation specialist  
+Expert in PowerShell 5.1 scripting for Windows infrastructure, RSAT modules, and legacy .NET Framework environments. Ensures compatibility, stability, and safe automation across AD, DNS, DHCP, and GPO.
+
+**Use when:** Working with Windows-only automation, legacy modules, on-prem infrastructure, or scripts requiring compatibility with older servers and full .NET Framework.
+
+### [**powershell-7-expert**](powershell-7-expert.md) - Cross-platform PowerShell 7 automation specialist  
+Expert in modern PowerShell 7+, .NET 6/7 APIs, cross-platform scripting, CI/CD integration, and cloud automation using Az and Microsoft Graph.
+
+**Use when:** Building modern automation tools, cross-platform scripts, Azure integrations, CI/CD cmdlets, or modernization projects moving off Windows PowerShell.
+
 ### [**python-pro**](python-pro.md) - Python ecosystem master
 Python language expert covering web development, data science, automation, and system scripting. Masters Pythonic code patterns and the vast Python ecosystem.
 
 **Use when:** Writing Python applications, building data pipelines, creating automation scripts, or developing Python packages.
 
-### [**rails-expert**](rails-expert.md) - Rails 7+ rapid development expert
+### [**rails-expert**](rails-expert.md) - Rails 8.1 rapid development expert
 Ruby on Rails specialist focusing on convention over configuration and rapid development. Masters Active Record, Hotwire, and Rails' comprehensive feature set.
 
 **Use when:** Building Rails applications, implementing real-time features with Hotwire, optimizing Active Record queries, or upgrading Rails versions.

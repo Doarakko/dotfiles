@@ -52,6 +52,59 @@ echo "$DEPENDABOT_PRS" | jq -r '.[] | "  #\(.number): \(.title)"'
 echo ""
 ```
 
+### ステップ1.5: リアクションによるフィルタリング
+```bash
+echo "🔍 PRのリアクションを確認中..."
+echo ""
+
+# 👎 (thumbs down) または 👀 (eyes) リアクションがついているPRをスキップ
+FILTERED_PRS="[]"
+SKIPPED_PRS=""
+
+echo "$DEPENDABOT_PRS" | jq -c '.[]' | while read -r pr; do
+    PR_NUMBER=$(echo "$pr" | jq -r '.number')
+    PR_TITLE=$(echo "$pr" | jq -r '.title')
+
+    # PRのリアクションを取得
+    REACTIONS=$(gh api "repos/$OWNER/$REPO/issues/$PR_NUMBER/reactions" 2>/dev/null || echo "[]")
+
+    # 👎 (-1) または 👀 (eyes) リアクションをチェック
+    HAS_THUMBS_DOWN=$(echo "$REACTIONS" | jq '[.[] | select(.content == "-1")] | length')
+    HAS_EYES=$(echo "$REACTIONS" | jq '[.[] | select(.content == "eyes")] | length')
+
+    if [ "$HAS_THUMBS_DOWN" -gt 0 ] || [ "$HAS_EYES" -gt 0 ]; then
+        echo "  ⏭️ スキップ: #$PR_NUMBER ($PR_TITLE)"
+        if [ "$HAS_THUMBS_DOWN" -gt 0 ]; then
+            echo "     理由: 👎 リアクションあり"
+        fi
+        if [ "$HAS_EYES" -gt 0 ]; then
+            echo "     理由: 👀 リアクションあり"
+        fi
+        SKIPPED_PRS="$SKIPPED_PRS $PR_NUMBER"
+    else
+        echo "  ✅ 対象: #$PR_NUMBER ($PR_TITLE)"
+        # フィルタ済みリストに追加
+        FILTERED_PRS=$(echo "$FILTERED_PRS" | jq --argjson pr "$pr" '. + [$pr]')
+    fi
+done
+
+# フィルタ済みPRで上書き
+DEPENDABOT_PRS="$FILTERED_PRS"
+PR_COUNT=$(echo "$DEPENDABOT_PRS" | jq 'length')
+
+echo ""
+if [ -n "$SKIPPED_PRS" ]; then
+    echo "⏭️ スキップされたPR:$SKIPPED_PRS"
+fi
+echo "📋 統合対象PR: ${PR_COUNT}件"
+echo ""
+
+if [ "$PR_COUNT" -eq 0 ]; then
+    echo "✅ 統合対象のPRがありません"
+    exit 0
+fi
+```
+
 ### ステップ2: 統合ブランチの作成
 ```bash
 echo "🌿 統合ブランチを作成中..."
@@ -254,7 +307,15 @@ if [ "$1" = "--close-originals" ]; then
 fi
 ```
 
+## スキップルール
+以下のリアクションがついているPRは統合対象から除外されます：
+- 👎 (thumbs down): 統合したくないPR
+- 👀 (eyes): 確認中・保留中のPR
+
+統合したくないPRがある場合は、事前に該当PRに👎または👀リアクションをつけてください。
+
 ## 注意事項
+- 👎または👀リアクションがついているPRは自動的にスキップされます
 - コンフリクトが発生した場合は手動での解決が必要な場合があります
 - ロックファイル（package-lock.json, yarn.lock）のコンフリクトは自動解決を試みます
 - テストが失敗した場合は個別のPRを確認してください

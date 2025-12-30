@@ -23,12 +23,13 @@ PR番号が指定されない場合は、現在のブランチのPRを使用し�
 1. PRとレビューコメントを取得
 2. 🚀リアクション付きコメントを必須対応として抽出
 3. リアクションなしコメントを分析し対応要否を判断
-4. CIの失敗状況を確認
-5. レビューコメントの修正を適用
-6. CIエラーを修正
-7. テストとリンティングを実行して検証
-8. ボットのコメントに返信を投稿
-9. コミットせずに変更内容の概要を表示
+4. コンフリクトを確認し、あれば解消
+5. CIの失敗状況を確認
+6. レビューコメントの修正を適用
+7. CIエラーを修正
+8. テストとリンティングを実行して検証
+9. ボットのコメントに返信を投稿
+10. コミットせずに変更内容の概要を表示
 
 ## 実装
 
@@ -133,7 +134,63 @@ if [ -n "$OPTIONAL_COMMENTS" ]; then
 fi
 ```
 
-### ステップ3: CIエラーの確認
+### ステップ3: コンフリクトの確認と解消
+```bash
+echo "🔍 コンフリクトを確認中..."
+
+# PRのベースブランチを取得
+BASE_BRANCH=$(gh pr view "$PR_NUMBER" --json baseRefName -q '.baseRefName' 2>/dev/null)
+
+if [ -z "$BASE_BRANCH" ]; then
+    echo "⚠️ ベースブランチを取得できませんでした"
+else
+    echo "📌 ベースブランチ: $BASE_BRANCH"
+
+    # リモートから最新を取得
+    git fetch origin "$BASE_BRANCH" 2>/dev/null
+
+    # マージコンフリクトをチェック（ドライラン）
+    MERGE_BASE=$(git merge-base HEAD "origin/$BASE_BRANCH" 2>/dev/null)
+
+    if [ -n "$MERGE_BASE" ]; then
+        # コンフリクトがあるか確認
+        CONFLICT_CHECK=$(git merge-tree "$MERGE_BASE" HEAD "origin/$BASE_BRANCH" 2>/dev/null | grep -c "^<<<<<<<" || echo "0")
+
+        if [ "$CONFLICT_CHECK" != "0" ]; then
+            echo "⚠️ コンフリクトが検出されました"
+            echo ""
+            echo "🔧 コンフリクトを解消中..."
+
+            # ベースブランチをマージ
+            if git merge "origin/$BASE_BRANCH" --no-commit --no-ff 2>/dev/null; then
+                echo "✅ 自動マージに成功しました"
+            else
+                # コンフリクトがある場合
+                echo "📝 コンフリクトファイル:"
+                git diff --name-only --diff-filter=U
+                echo ""
+                echo "💡 以下のコンフリクトを解消してください:"
+                git diff --diff-filter=U
+                echo ""
+                echo "⚠️ コンフリクトを手動で解消し、以下のファイルを修正してください:"
+                git diff --name-only --diff-filter=U | while read -r file; do
+                    echo "  - $file"
+                done
+                echo ""
+                HAS_CONFLICT="true"
+            fi
+        else
+            echo "✅ コンフリクトはありません"
+        fi
+    else
+        echo "ℹ️ マージベースを取得できませんでした"
+    fi
+fi
+
+echo ""
+```
+
+### ステップ4: CIエラーの確認
 ```bash
 echo "🔍 CIエラーを確認中..."
 
@@ -166,7 +223,7 @@ echo "🔧 修正を開始します..."
 echo ""
 ```
 
-### ステップ4: レビューコメントの修正適用
+### ステップ5: レビューコメントの修正適用
 レビューコメントの種類に応じて適切な修正を実行:
 
 1. **コードの提案**: 提案されたコード変更を直接適用
@@ -191,7 +248,7 @@ if [ -n "$REVIEW_COMMENTS" ]; then
 fi
 ```
 
-### ステップ5: CIエラーの修正
+### ステップ6: CIエラーの修正
 CIエラーの種類に応じて自動修正を実行:
 
 #### リンティングエラーの修正
@@ -284,7 +341,7 @@ if echo "$FAILED_CHECKS" | grep -qi "build"; then
 fi
 ```
 
-### ステップ6: 修正の検証
+### ステップ7: 修正の検証
 ```bash
 echo "🧪 修正の検証中..."
 echo ""
@@ -306,7 +363,7 @@ fi
 echo ""
 ```
 
-### ステップ7: ボットコメントへの自動返信
+### ステップ8: ボットコメントへの自動返信
 ```bash
 # ボットからのコメントに対して修正完了の返信を投稿（人間のコメントには返信しない）
 # まずボットコメントを抽出
@@ -335,7 +392,7 @@ if [ -n "$BOT_COMMENTS" ] && [ -n "$(git status --porcelain)" ]; then
 fi
 ```
 
-### ステップ8: 修正結果の表示
+### ステップ9: 修正結果の表示
 ```bash
 # 変更内容の確認
 echo "📝 修正内容の確認："

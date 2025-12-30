@@ -1,6 +1,6 @@
 # GitHub PR 自動修正コマンド
 
-PRのレビューコメント(🚀リアクション付き)とCIエラーを自動的に修正します。
+PRのレビューコメント(🚀リアクション付き + ボットからのコメント)とCIエラーを自動的に修正します。
 
 ## 使用方法
 ```bash
@@ -9,15 +9,22 @@ PRのレビューコメント(🚀リアクション付き)とCIエラーを自�
 
 PR番号が指定されない場合は、現在のブランチのPRを使用します。
 
-**重要**: 修正したいレビューコメントに🚀リアクションを追加してから実行してください。🚀リアクションがついたコメントのみが修正対象になります。
+## 修正対象のコメント
+1. **ボットからのコメント**: 自動で修正対象になります（リアクション不要）
+   - GitHub Actions, CodeRabbit, Dependabot, Renovate 等のボットを自動検出
+   - 修正後に自動で返信コメントを投稿
+2. **人間からのコメント**: 🚀リアクションを追加したコメントのみ修正対象
 
 ## 処理手順
-1. PRとレビューコメント(🚀リアクション付き)を取得
-2. CIの失敗状況を確認
-3. レビューコメントの修正を適用
-4. CIエラーを修正
-5. テストとリンティングを実行して検証
-6. コミットせずに変更内容の概要を表示
+1. PRとレビューコメントを取得
+2. ボットからのコメントを自動検出
+3. 🚀リアクション付きの人間コメントを取得
+4. CIの失敗状況を確認
+5. レビューコメントの修正を適用
+6. CIエラーを修正
+7. テストとリンティングを実行して検証
+8. ボットコメントに返信を投稿
+9. コミットせずに変更内容の概要を表示
 
 ## 実装
 
@@ -44,29 +51,60 @@ echo "📋 PR #$PR_NUMBER を修正します"
 echo ""
 ```
 
-### ステップ2: レビューコメント(🚀リアクション付き)の取得
+### ステップ2: レビューコメントの取得とボット検出
 ```bash
-echo "🚀 🚀リアクション付きレビューコメントを取得中..."
+echo "🔍 レビューコメントを取得中..."
 
 # PRのレビューコメントを取得
 COMMENTS=$(gh api "repos/:owner/:repo/pulls/$PR_NUMBER/comments" 2>/dev/null || echo "")
 
 if [ -z "$COMMENTS" ] || [ "$COMMENTS" = "[]" ]; then
     echo "ℹ️ レビューコメントが見つかりません"
-    REVIEW_COMMENTS=""
+    BOT_COMMENTS=""
+    HUMAN_COMMENTS=""
 else
-    # 🚀リアクション(rocket)がついたコメントのみを抽出
-    REVIEW_COMMENTS=$(echo "$COMMENTS" | jq -r '.[] | select(.reactions.rocket > 0) | {path: .path, line: .position, body: .body, id: .id} | @json')
+    # ボットからのコメントを抽出（リアクション不要）
+    # ボット判定: user.type == "Bot" または user.login に [bot] が含まれる
+    BOT_COMMENTS=$(echo "$COMMENTS" | jq -r '[.[] | select(.user.type == "Bot" or (.user.login | test("\\[bot\\]$")))] | .[] | {path: .path, line: .position, body: .body, id: .id, user: .user.login} | @json')
 
-    if [ -z "$REVIEW_COMMENTS" ]; then
-        echo "ℹ️ 🚀リアクションがついたレビューコメントが見つかりません"
-        echo "💡 修正したいコメントに🚀リアクションを追加してから再実行してください"
+    # 人間からの🚀リアクション付きコメントを抽出
+    HUMAN_COMMENTS=$(echo "$COMMENTS" | jq -r '[.[] | select(.user.type != "Bot" and (.user.login | test("\\[bot\\]$") | not) and .reactions.rocket > 0)] | .[] | {path: .path, line: .position, body: .body, id: .id, user: .user.login} | @json')
+
+    # ボットコメントの表示
+    if [ -n "$BOT_COMMENTS" ]; then
+        BOT_COUNT=$(echo "$BOT_COMMENTS" | wc -l | tr -d ' ')
+        echo "🤖 ボットからのコメント: ${BOT_COUNT}件（自動修正対象）"
+        echo ""
+        echo "$BOT_COMMENTS" | jq -r '. | "- [\(.user)] \(.path):\(.line) - \(.body | split("\n")[0])"' | head -20
+        echo ""
     else
-        COMMENT_COUNT=$(echo "$REVIEW_COMMENTS" | wc -l | tr -d ' ')
-        echo "📋 🚀リアクション付きコメント: ${COMMENT_COUNT}件"
+        echo "ℹ️ ボットからのコメントはありません"
+    fi
+
+    # 人間コメントの表示
+    if [ -n "$HUMAN_COMMENTS" ]; then
+        HUMAN_COUNT=$(echo "$HUMAN_COMMENTS" | wc -l | tr -d ' ')
+        echo "👤 🚀リアクション付き人間コメント: ${HUMAN_COUNT}件"
         echo ""
-        echo "$REVIEW_COMMENTS" | jq -r '. | "- \(.path):\(.line) - \(.body)"'
+        echo "$HUMAN_COMMENTS" | jq -r '. | "- [\(.user)] \(.path):\(.line) - \(.body | split("\n")[0])"'
         echo ""
+    else
+        echo "ℹ️ 🚀リアクション付きの人間コメントはありません"
+        echo "💡 人間からのコメントを修正するには🚀リアクションを追加してください"
+    fi
+fi
+
+# 全修正対象コメントを統合
+REVIEW_COMMENTS=""
+if [ -n "$BOT_COMMENTS" ]; then
+    REVIEW_COMMENTS="$BOT_COMMENTS"
+fi
+if [ -n "$HUMAN_COMMENTS" ]; then
+    if [ -n "$REVIEW_COMMENTS" ]; then
+        REVIEW_COMMENTS="$REVIEW_COMMENTS
+$HUMAN_COMMENTS"
+    else
+        REVIEW_COMMENTS="$HUMAN_COMMENTS"
     fi
 fi
 ```
@@ -244,7 +282,34 @@ fi
 echo ""
 ```
 
-### ステップ7: 修正結果の表示
+### ステップ7: ボットコメントへの自動返信
+```bash
+# ボットからのコメントに対して修正完了の返信を投稿
+if [ -n "$BOT_COMMENTS" ] && [ -n "$(git status --porcelain)" ]; then
+    echo "💬 ボットコメントに返信中..."
+    echo ""
+
+    # 各ボットコメントに返信
+    echo "$BOT_COMMENTS" | while read -r comment; do
+        COMMENT_ID=$(echo "$comment" | jq -r '.id')
+        BOT_USER=$(echo "$comment" | jq -r '.user')
+        COMMENT_PATH=$(echo "$comment" | jq -r '.path')
+
+        if [ -n "$COMMENT_ID" ] && [ "$COMMENT_ID" != "null" ]; then
+            # 返信コメントを投稿
+            REPLY_BODY="✅ 修正を適用しました。ご指摘ありがとうございます。"
+
+            gh api "repos/:owner/:repo/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \
+                -f body="$REPLY_BODY" 2>/dev/null \
+                && echo "  ✓ $BOT_USER のコメント (ID: $COMMENT_ID) に返信しました" \
+                || echo "  ⚠️ $BOT_USER のコメントへの返信に失敗しました"
+        fi
+    done
+    echo ""
+fi
+```
+
+### ステップ8: 修正結果の表示
 ```bash
 # 変更内容の確認
 echo "📝 修正内容の確認："
@@ -282,9 +347,17 @@ fi
 ## 修正対象のまとめ
 
 ### レビューコメント修正
-- 🚀リアクションがついたコメントのみを対象
+- **ボットコメント**: リアクション不要で自動的に修正対象
+  - 修正後に自動で返信コメントを投稿
+- **人間コメント**: 🚀リアクションがついたコメントのみを対象
 - コードの提案を直接適用
 - スタイル、ロジック、ドキュメント、テストの修正
+
+### ボット検出ルール
+以下の条件でボットを自動検出:
+- GitHubユーザータイプが `Bot` のアカウント
+- ユーザー名が `[bot]` で終わるアカウント
+- 例: `github-actions[bot]`, `coderabbitai[bot]`, `dependabot[bot]`, `renovate[bot]`
 
 ### CIエラー修正
 1. **リンティングエラー**: 自動修正ツールを実行
@@ -299,7 +372,8 @@ fi
 - 自動修正が不可能な場合は手動修正の必要性を通知
 
 ## 注意事項
-- **🚀リアクション必須**: 修正したいコメントに🚀リアクションを追加してください
+- **ボットコメント**: リアクション不要で自動的に修正対象となり、修正後に返信を投稿
+- **人間コメント**: 修正したいコメントに🚀リアクションを追加してください
 - すべてのエラーが自動修正できるわけではありません
 - 複雑なロジックエラーは手動での修正が必要です
 - 修正後は必ずローカルでテストを実行して検証してください

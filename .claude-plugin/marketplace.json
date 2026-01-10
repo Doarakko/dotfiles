@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "doarakko-config",
-      "source": "./.claude",
+      "source": "./",
       "description": "Productivity commands for branch management, commit splitting, PR workflows, code review, CI/CD automation, and test creation"
     }
   ]

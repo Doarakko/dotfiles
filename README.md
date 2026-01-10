@@ -13,10 +13,20 @@ cd dotfiles
 
 #### Plugin
 
+##### Install
+
 ```bash
-/plugin marketplace add ~/src/dotfiles
-/plugin install doarakko-config@dotfiles
+claude plugin marketplace add ~/src/dotfiles
+claude plugin install doarakko-config@doarakko-config
 ```
+
+##### Update
+
+```bash
+claude plugin update doarakko-config@doarakko-config
+```
+
+After install/update, restart Claude Code to apply changes.
 
 ### MCP Server
 

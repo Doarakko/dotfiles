@@ -78,31 +78,8 @@
       "Bash(for:*)",
       "Bash(case:*)",
       "Bash([[:*)",
-      "Bash(.claude/hooks/task-completion-notify.sh)",
       "Read(~/.claude/commands/*.md)",
       "WebFetch(domain:docs.anthropic.com)"
-    ]
-  },
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/task-completion-notify.sh"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/task-completion-notify.sh"
-          }
-        ]
-      }
     ]
   },
   "feedbackSurveyState": {

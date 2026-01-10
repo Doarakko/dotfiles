@@ -5,5 +5,27 @@
   "author": {
     "name": "Doarakko",
     "email": "2wua4nlyi@gmail.com"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/task-completion-notify.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/task-completion-notify.sh"
+          }
+        ]
+      }
+    ]
   }
 }

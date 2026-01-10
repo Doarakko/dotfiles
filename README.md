@@ -18,15 +18,6 @@ cd dotfiles
 /plugin install doarakko-config@dotfiles
 ```
 
-#### Subagents
-
-[VoltAgent/awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)
-
-```bash
-cd ~/src/dotfiles
-./update-subagents.sh
-```
-
 ### MCP Server
 
 - [serena](https://github.com/oraios/serena)

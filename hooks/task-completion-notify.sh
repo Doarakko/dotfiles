@@ -3,6 +3,9 @@
 # Claude Code タスク完了通知 Hook
 # タスク完了時にmacOS通知を送信
 
+# デバッグログ
+echo "$(date): Hook called from $(pwd)" >> /tmp/claude-hook-debug.log
+
 # プロジェクト名を取得（ディレクトリ名から）
 PROJECT_NAME=$(basename "$(pwd)")
 

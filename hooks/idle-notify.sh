@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Claude Code タスク完了通知 Hook
-# タスク完了時にmacOS通知を送信
+# Claude Code アイドル通知 Hook
+# ユーザー入力待ち時にmacOS通知を送信
 
 # プロジェクト名を取得
 PROJECT_NAME=$(basename "$(pwd)")
@@ -10,7 +10,7 @@ PROJECT_NAME=$(basename "$(pwd)")
 BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 
 # 通知タイトルと内容を設定
-NOTIFICATION_TITLE="🚀 ${PROJECT_NAME}"
+NOTIFICATION_TITLE="💬 ${PROJECT_NAME}"
 NOTIFICATION_MESSAGE="${BRANCH_NAME}"
 
 # osascriptを使用してmacOS通知を送信

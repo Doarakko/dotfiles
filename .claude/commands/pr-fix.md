@@ -27,9 +27,7 @@ PR番号が指定されない場合は、現在のブランチのPRを使用し�
 5. CIの失敗状況を確認
 6. レビューコメントの修正を適用
 7. CIエラーを修正
-8. テストとリンティングを実行して検証
-9. ボットのコメントに返信を投稿
-10. コミットせずに変更内容の概要を表示
+8. コミット・プッシュ・ボットコメントへの返信を実行
 
 ## 実装
 
@@ -392,69 +390,52 @@ fi
 echo ""
 ```
 
-### ステップ8: ボットコメントへの自動返信
+### ステップ8: コミット・プッシュ・ボットコメントへの返信
+修正が完了したら、コミット・プッシュ・返信を一連で実行します。
+
 ```bash
-# ボットからのコメントに対して修正完了の返信を投稿（人間のコメントには返信しない）
-# まずボットコメントを抽出
-BOT_COMMENTS=$(echo "$COMMENTS" | jq -r '[.[] | select(.user.type == "Bot" or (.user.login | test("\\[bot\\]$")))] | .[] | {path: .path, line: .position, body: .body, id: .id, user: .user.login} | @json' 2>/dev/null || echo "")
-
-if [ -n "$BOT_COMMENTS" ] && [ -n "$(git status --porcelain)" ]; then
-    echo "💬 ボットコメントに返信中..."
-    echo ""
-
-    # 各ボットコメントに返信
-    echo "$BOT_COMMENTS" | while read -r comment; do
-        COMMENT_ID=$(echo "$comment" | jq -r '.id')
-        BOT_USER=$(echo "$comment" | jq -r '.user')
-
-        if [ -n "$COMMENT_ID" ] && [ "$COMMENT_ID" != "null" ]; then
-            # 返信コメントを投稿
-            REPLY_BODY="✅ 修正を適用しました。ご指摘ありがとうございます。"
-
-            gh api "repos/:owner/:repo/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \
-                -f body="$REPLY_BODY" 2>/dev/null \
-                && echo "  ✓ $BOT_USER のコメント (ID: $COMMENT_ID) に返信しました" \
-                || echo "  ⚠️ $BOT_USER のコメントへの返信に失敗しました"
-        fi
-    done
-    echo ""
-fi
-```
-
-### ステップ9: 修正結果の表示
-```bash
-# 変更内容の確認
-echo "📝 修正内容の確認："
-git status --porcelain
-
+# 変更があるか確認
 if [ -n "$(git status --porcelain)" ]; then
-    echo ""
-    echo "📋 修正されたファイル："
-    git diff --name-only
-    echo ""
-    echo "📊 変更統計："
+    echo "📝 修正内容の確認："
     git diff --stat
     echo ""
-    echo "✅ 修正が適用されました！"
+
+    # 1. コミット作成（Conventional Commits形式）
+    echo "📦 コミット作成中..."
+    git add -A
+    git commit -m "fix: address review comments"
+    echo "✅ コミット完了"
     echo ""
-    echo "🔄 次のステップ："
-    echo "1. 'git diff' で変更内容を詳細確認"
-    echo "2. 必要に応じて追加の修正を実施"
-    echo "3. /commit でコミット作成"
-    echo "4. /push-current でリモートにpush"
-    echo "5. 数分後に /ci-check で状態を確認"
-else
+
+    # 2. プッシュ
+    echo "🚀 プッシュ中..."
+    git push
+    echo "✅ プッシュ完了"
     echo ""
-    echo "ℹ️ 自動修正可能な変更が見つかりませんでした"
-    echo "💡 以下の対応が必要です："
-    if [ -n "$REVIEW_COMMENTS" ]; then
-        echo "  - レビューコメントの手動修正"
-    fi
-    if [ -n "$FAILED_CHECKS" ]; then
-        echo "  - CIエラーの手動修正"
-    fi
 fi
+
+# 3. ボットコメントへの返信（変更の有無に関わらず全ボットコメントに返信）
+echo "💬 ボットコメントに返信中..."
+# 各ボットコメントに対して、対応状況に応じた返信を投稿
+# gh api "repos/:owner/:repo/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" -f body="..."
+echo ""
+
+echo "✅ 処理が完了しました！"
+echo ""
+echo "🔄 次のステップ："
+echo "1. 数分後に /ci-check で状態を確認"
 ```
+
+**重要: ボットコメント返信のルール**
+
+すべてのボットコメントに対して、対応状況に応じた返信を投稿する:
+
+| 対応状況 | 返信メッセージ |
+|---------|---------------|
+| 修正した | `✅ 修正を適用しました。` |
+| 修正方針を変えた | `✅ 修正を適用しました。ただし、〇〇の理由で△△の方針で対応しました。` |
+| 対応不要と判断 | `⏭️ 確認しましたが、対応不要と判断しました。理由: 〇〇` |
+| 既に修正済み | `✅ 前回のコミットで修正済みです。` |
 
 ### ステップ10: CLAUDE.md・コーディング規約への反映確認
 修正を実行した後、その内容がプロジェクト全体に適用すべきルールかを判断します。
@@ -516,5 +497,4 @@ fi
 - **自動返信**: ボットのコメントのみ（人間のコメントには返信しない）
 - すべてのエラーが自動修正できるわけではありません
 - 複雑なロジックエラーは手動での修正が必要です
-- 修正後は必ずローカルでテストを実行して検証してください
-- コミットとプッシュは手動で実行してください
+- 修正後は自動でコミット・プッシュ・返信まで実行されます

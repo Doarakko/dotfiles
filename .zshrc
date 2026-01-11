@@ -68,8 +68,8 @@ gwt-clean() {
   # リモートの最新情報を取得
   git fetch --prune 2>/dev/null
 
-  # worktree一覧を取得して処理
-  git worktree list --porcelain | while read -r line; do
+  # worktree一覧を取得して処理（プロセス置換でサブシェルを回避）
+  while read -r line; do
     if [[ "$line" == worktree\ * ]]; then
       worktree_path="${line#worktree }"
     elif [[ "$line" == branch\ * ]]; then
@@ -80,15 +80,15 @@ gwt-clean() {
         continue
       fi
 
-      # メインブランチにマージ済みか確認
-      if git branch --merged "$main_branch" | grep -q "^\s*${branch_name}$"; then
+      # メインブランチにマージ済みか確認（+はworktree、*は現在のブランチを示す）
+      if git branch --merged "$main_branch" | grep -qE "^[[:space:]*+]*${branch_name}$"; then
         echo "Removing: $worktree_path (branch: $branch_name)"
         git worktree remove "$worktree_path" 2>/dev/null
         git branch -d "$branch_name" 2>/dev/null
         ((deleted_count++))
       fi
     fi
-  done
+  done < <(git worktree list --porcelain)
 
   echo "Done. Removed $deleted_count worktree(s)."
 }

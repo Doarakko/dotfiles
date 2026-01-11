@@ -23,7 +23,7 @@ claude plugin install doarakko-config@doarakko-config
 ##### Update
 
 ```bash
-claude plugin update doarakko-config@doarakko-config
+claude plugin marketplace update && claude plugin uninstall doarakko-config@doarakko-config && claude plugin install doarakko-config@doarakko-config
 ```
 
 After install/update, restart Claude Code to apply changes.

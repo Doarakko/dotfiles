@@ -21,4 +21,4 @@ SAFE_TITLE=$(escape_for_applescript "🚀 ${PROJECT_NAME}")
 SAFE_MESSAGE=$(escape_for_applescript "$BRANCH_NAME")
 
 # osascriptを使用してmacOS通知を送信
-osascript -e "display notification \"${SAFE_MESSAGE}\" with title \"${SAFE_TITLE}\" sound name \"Glass\"" 2>/dev/null
+osascript -e "display notification \"${SAFE_MESSAGE}\" with title \"${SAFE_TITLE}\" sound name \"Hero\"" 2>/dev/null

@@ -4,5 +4,15 @@
 [core]
         editor = code --wait
 [alias]
-        # delete merged branches
-        delete-mb = "!f () { git checkout $1; git branch --merged|egrep -v '\\*|develop|main|master|production'|xargs git branch -d; };f"
+	# delete merged branches
+	delete-mb = "!f() { \
+	  base=${1:-main}; \
+	  git checkout \"$base\" || exit 1; \
+	  used=$(git worktree list --porcelain | awk '/branch /{print $2}' | sed 's#refs/heads/##'); \
+	  git branch --merged \"$base\" --format='%(refname:short)' \
+	    | grep -Ev '^(develop|main|master|production)$' \
+	    | while read b; do \
+	        echo \"$used\" | grep -qx \"$b\" && continue; \
+	        git branch -d \"$b\"; \
+	      done; \
+	}; f"

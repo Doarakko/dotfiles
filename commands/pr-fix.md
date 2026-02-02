@@ -17,7 +17,7 @@ PR番号省略時は現在のブランチのPRを使用。
 - lint/type/test/build エラーを自動修正
 
 ## 手順
-1. `gh pr view` でPR情報取得
+1. PR番号が指定されていない場合は `gh pr view` (引数なし)で現在のブランチのPRを取得。指定されている場合は `gh pr view <番号>` でPR情報取得
 2. `gh api pulls/:pr/comments` でレビューコメント取得
 3. コンフリクト確認、あれば解消
 4. `gh pr checks` でCIエラー確認

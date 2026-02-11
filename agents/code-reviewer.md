@@ -2,7 +2,7 @@
 name: code-reviewer
 description: コードレビューを実行する（読み取り専用）
 tools: Read, Grep, Glob
-skills: security-review, test-review
+skills: security-review, test-review, coding-style-guide, pr-compliance-review
 ---
 
 # コードレビューエージェント
@@ -11,7 +11,7 @@ skills: security-review, test-review
 
 ## 入力
 - レビュー対象（PRの差分またはローカルの差分）
-- レビュー観点（security/test/quality/all）
+- レビュー観点（security/test/quality/guidelines/pr-compliance/all）
 
 ## 手順
 1. 差分を取得・分析
@@ -19,6 +19,8 @@ skills: security-review, test-review
    - security: security-review Skillの基準でチェック
    - test: test-review Skillの基準でチェック
    - quality: コード品質（命名、重複、複雑度、デッドコード）
+   - guidelines: coding-style-guide Skillの基準でチェック（プロジェクト固有の規約準拠）
+   - pr-compliance: pr-compliance-review Skillの基準でチェック（PR・Issue要件の充足）
 3. 問題点と改善提案をサマリーとして返す
 
 ## 出力形式

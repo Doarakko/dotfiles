@@ -2,6 +2,7 @@
 name: test-generator
 description: ソースコードからテストを自動生成する
 tools: Read, Write, Bash, Grep, Glob
+skills: test-review
 ---
 
 # テスト生成エージェント
@@ -15,7 +16,7 @@ tools: Read, Write, Bash, Grep, Glob
 1. 対象ファイルの言語・フレームワークを識別
 2. 既存のテストファイルからパターンを学習（Glob/Grepで検索）
 3. テストファイル名を決定（プロジェクトの規則に従う）
-4. テストコードを生成:
+4. test-review Skillの品質基準に従い、テストコードを生成:
    - 公開関数・クラスのテスト
    - 正常系・異常系・エッジケース
    - 既存テストと同じスタイル

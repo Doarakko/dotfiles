@@ -15,6 +15,8 @@
    - テストファイルを生成
 3. 生成結果をまとめて表示
 4. テスト実行して検証
+5. `code-reviewer` Subagentで生成テストの品質を検証（test観点、test-review Skill使用）
+6. 品質問題があれば修正
 
 ## Subagent活用
 複数ファイルのテスト生成を `test-generator` Subagentで並列実行。

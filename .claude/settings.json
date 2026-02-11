@@ -29,7 +29,8 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(tail:*)",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "mcp__playwright__*"
     ]
   },
   "feedbackSurveyState": {

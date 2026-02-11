@@ -7,6 +7,18 @@
     "email": "2wua4nlyi@gmail.com"
   },
   "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f Makefile ] && grep -q '^lint:' Makefile; then make lint 2>&1 | tail -20; fi"
+          }
+        ],
+        "description": "Run make lint after file edits"
+      }
+    ],
     "Stop": [
       {
         "hooks": [

@@ -10,17 +10,14 @@
 ## 手順
 1. `gh pr view` でPR情報取得
 2. `gh pr diff` で差分取得
-3. `code-reviewer` Subagentを**並列実行**してレビュー:
-   - security: セキュリティチェック（security-review Skill使用）
-   - test: テストチェック（test-review Skill使用）
-   - quality: コード品質チェック
+3. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）
 4. レビュー結果を統合して表示
 5. 修正に入るか確認（AskUserQuestion）
 6. 修正実行後、ボットコメントに返信
 7. CLAUDE.md更新が必要か確認
 
 ## Subagent活用
-セキュリティ・テスト・品質の3観点を `code-reviewer` Subagentで並列実行。
+`code-reviewer` Subagentに登録されたSkillの全観点で並列実行。
 
 ## 出力形式
 - 全体評価（Approve/Request Changes/Comment）

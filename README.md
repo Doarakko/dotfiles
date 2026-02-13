@@ -30,7 +30,6 @@ After install/update, restart Claude Code to apply changes.
 
 ### MCP Server
 
-- [serena](https://github.com/oraios/serena)
 - Gemini
 - Playwright
 - Figma

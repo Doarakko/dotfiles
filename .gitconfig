@@ -1,12 +1,15 @@
 [user]
         name = peperoncino
-        email = 2wua4nlyi@gmail.com
+        email = Doarakko@users.noreply.github.com
 [core]
         editor = code --wait
 [alias]
 	# delete merged branches
 	delete-mb = "!f() { \
-	  base=${1:-main}; \
+	  if [ -n \"$1\" ]; then base=$1; \
+	  elif git show-ref --verify --quiet refs/heads/main; then base=main; \
+	  elif git show-ref --verify --quiet refs/heads/master; then base=master; \
+	  else echo 'Error: Could not find main or master branch' >&2; exit 1; fi; \
 	  git checkout \"$base\" || exit 1; \
 	  used=$(git worktree list --porcelain | awk '/branch /{print $2}' | sed 's#refs/heads/##'); \
 	  git branch --merged \"$base\" --format='%(refname:short)' \

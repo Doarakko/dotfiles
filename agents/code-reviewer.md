@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: コードレビューを実行する（読み取り専用）
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash, WebFetch
 skills: security-review, test-review, coding-style-guide, pr-compliance-review
 ---
 

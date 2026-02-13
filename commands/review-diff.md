@@ -11,17 +11,14 @@
 ## 手順
 1. `git status`、`git diff` で変更取得
 2. プロジェクト環境を分析（言語、フレームワーク）
-3. `code-reviewer` Subagentを**並列実行**してレビュー:
-   - security: セキュリティチェック（security-review Skill使用）
-   - test: テストチェック（test-review Skill使用）
-   - quality: コード品質チェック
+3. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）
 4. 自動チェックツール実行（ESLint、Ruff、golangci-lint等）
 5. レビュー結果を統合して表示
 6. 修正に入るか確認（AskUserQuestion）
 7. CLAUDE.md更新が必要か確認
 
 ## Subagent活用
-セキュリティ・テスト・品質の3観点を `code-reviewer` Subagentで並列実行。
+`code-reviewer` Subagentに登録されたSkillの全観点で並列実行。
 
 ## 出力形式
 - 変更統計（ファイル数、追加/削除行数）

@@ -3,11 +3,17 @@
   "checkpoint_id": "0afc067b8152",
   "strategy": "manual-commit",
   "branch": "feature/add-command-frontmatter-and-update-settings",
-  "checkpoints_count": 3,
+  "checkpoints_count": 6,
   "files_touched": [
     ".claude/settings.json",
+    "commands/ci-fix.md",
     "commands/commit-split.md",
-    "commands/pr-fix.md"
+    "commands/commit.md",
+    "commands/pr-fix.md",
+    "commands/pr-review.md",
+    "commands/pr-zero.md",
+    "commands/review-diff.md",
+    "commands/test-create.md"
   ],
   "sessions": [
     {
@@ -16,13 +22,20 @@
       "context": "/0a/fc067b8152/0/context.md",
       "content_hash": "/0a/fc067b8152/0/content_hash.txt",
       "prompt": "/0a/fc067b8152/0/prompt.txt"
+    },
+    {
+      "metadata": "/0a/fc067b8152/1/metadata.json",
+      "transcript": "/0a/fc067b8152/1/full.jsonl",
+      "context": "/0a/fc067b8152/1/context.md",
+      "content_hash": "/0a/fc067b8152/1/content_hash.txt",
+      "prompt": "/0a/fc067b8152/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 51,
-    "cache_creation_tokens": 84493,
-    "cache_read_tokens": 1080676,
-    "output_tokens": 1660,
-    "api_call_count": 30
+    "input_tokens": 92,
+    "cache_creation_tokens": 168364,
+    "cache_read_tokens": 2937192,
+    "output_tokens": 7876,
+    "api_call_count": 61
   }
 }

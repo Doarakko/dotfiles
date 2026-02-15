@@ -1,0 +1,38 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "0afc067b8152",
+  "session_id": "ccd46889-8bc2-49ce-a7f7-a1233dc4f423",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-15T14:20:10.49379Z",
+  "branch": "feature/add-command-frontmatter-and-update-settings",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "commands/ci-fix.md",
+    "commands/commit-split.md",
+    "commands/commit.md",
+    "commands/pr-fix.md",
+    "commands/pr-review.md",
+    "commands/pr-zero.md",
+    "commands/review-diff.md",
+    "commands/test-create.md"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "e2b4067f-93f6-4583-a26b-a18cd12d7247",
+  "token_usage": {
+    "input_tokens": 41,
+    "cache_creation_tokens": 83871,
+    "cache_read_tokens": 1856516,
+    "output_tokens": 6216,
+    "api_call_count": 31
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-15T14:20:10.330461Z",
+    "agent_lines": 108,
+    "human_added": 251,
+    "human_modified": 8,
+    "human_removed": 0,
+    "total_committed": 367,
+    "agent_percentage": 29.427792915531338
+  },
+  "transcript_path": ".claude/projects/-Users-yuki-tanaami-src-dotfiles/ccd46889-8bc2-49ce-a7f7-a1233dc4f423.jsonl"
+}

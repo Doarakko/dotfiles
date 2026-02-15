@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "7710dcbc676e",
+  "strategy": "manual-commit",
+  "branch": "feature/add-command-frontmatter-and-update-settings",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/77/10dcbc676e/0/metadata.json",
+      "transcript": "/77/10dcbc676e/0/full.jsonl",
+      "context": "/77/10dcbc676e/0/context.md",
+      "content_hash": "/77/10dcbc676e/0/content_hash.txt",
+      "prompt": "/77/10dcbc676e/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 1909,
+    "cache_read_tokens": 305843,
+    "output_tokens": 360,
+    "api_call_count": 4
+  }
+}

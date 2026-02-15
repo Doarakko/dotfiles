@@ -30,8 +30,6 @@ After install/update, restart Claude Code to apply changes.
 
 ### MCP Server
 
-- Gemini
-- Playwright
 - Figma
 - [Chrome DevTools](https://github.com/ChromeDevTools/chrome-devtools-mcp)
 - [context7](https://github.com/upstash/context7)
@@ -44,15 +42,15 @@ After install/update, restart Claude Code to apply changes.
 - LINE
 - Slack
 - Todoist
-- Visual Studio Code
 
 ## development
 
 - docker-compose
 - Docker Desktop for Mac
 - Git
-- Go
 - Homebrew
 - Postman
+- Visual Studio Code
 - Claude Code
 - gh
+- [Playwright CLI](https://github.com/microsoft/playwright-cli)

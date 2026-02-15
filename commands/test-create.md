@@ -1,14 +1,24 @@
+---
+description: 現在の差分から変更されたファイルを検出し、テストを自動生成する
+argument-hint: [対象ファイルパス]
+allowed-tools: Bash(git diff *), Bash(npm *), Bash(npx *), Bash(go test *), Bash(pytest *), Read, Write, Edit, Grep, Glob
+---
+
 # テスト自動生成コマンド
 
 現在の差分から変更されたファイルを検出し、テストを自動生成する。
 
 ## 使用方法
+```text
+/test-create [対象ファイルパス]
 ```
-/test-create
-```
+ファイルパス省略時は差分から自動検出。
+
+## 変更情報（自動取得）
+- 変更ファイル一覧: !`git diff --name-only HEAD 2>/dev/null; git diff --name-only --cached 2>/dev/null`
 
 ## 手順
-1. `git diff` で変更ファイルを検出
+1. 上記の変更ファイル一覧、または指定ファイル ($ARGUMENTS) を対象にする
 2. 各ファイルに対して `test-generator` Subagentを**並列実行**:
    - 言語・フレームワークを識別
    - 既存テストパターンを学習

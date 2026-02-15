@@ -1,3 +1,8 @@
+---
+description: 現在の変更を論理的な単位で複数のコミットに分割する
+allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *)
+---
+
 # コミット分割コマンド
 
 現在の変更を論理的な単位で複数のコミットに分割する。
@@ -7,12 +12,13 @@
 /commit-split [ベースブランチ] [分割方式]
 ```
 
-### パラメータ
-- ベースブランチ: 比較対象（省略時はmaster/mainを自動検出）
-- 分割方式: `file`（ファイル単位）、`feature`（機能単位）、`interactive`（インタラクティブ）
+## 現在の状態（自動取得）
+- ステータス: !`git status --short`
+- 差分統計: !`git diff --stat`
+- 直近のコミット: !`git log --oneline -5`
 
 ## 手順
-1. `git status`、`git diff` で変更を確認
+1. 上記の自動取得データを元に変更を確認
 2. 分割方針を決定
 3. 関連する変更をグループ化してコミット
 4. 各コミットはConventional Commits形式

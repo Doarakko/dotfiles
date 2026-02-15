@@ -1,3 +1,8 @@
+---
+description: 現在の変更をコミットし、リモートにプッシュする
+allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *)
+---
+
 # コミットコマンド
 
 現在の変更をコミットし、リモートにプッシュする。
@@ -7,8 +12,13 @@
 /commit
 ```
 
+## 現在の状態（自動取得）
+- ステータス: !`git status --short`
+- 差分: !`git diff --stat`
+- 直近のコミット: !`git log --oneline -5`
+
 ## 手順
-1. `git status` で変更を確認
+1. 上記の自動取得データを元に変更を確認
 2. Conventional Commits形式でコミットメッセージ作成
 3. `git push` でリモートに反映
 

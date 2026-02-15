@@ -6,12 +6,11 @@
 mkdir -p ~/src
 cd ~/src
 git clone https://github.com/Doarakko/dotfiles.git
-cd dotfiles
 ```
 
 ### Claude Code
 
-#### Plugin
+#### Original Plugin
 
 ##### Install
 
@@ -23,18 +22,24 @@ claude plugin install doarakko-config@doarakko-config
 ##### Update
 
 ```bash
-claude plugin marketplace update && claude plugin uninstall doarakko-config@doarakko-config && claude plugin install doarakko-config@doarakko-config
+claude-plugin-update
 ```
 
 After install/update, restart Claude Code to apply changes.
 
-### MCP Server
+#### LSP Plugin
 
-- Gemini
-- Playwright
+```bash
+claude plugin install gopls-lsp@claude-plugins-official
+claude plugin install typescript-lsp@claude-plugins-official
+claude plugin install pyright-lsp@claude-plugins-official
+```
+
+#### MCP Server
+
+- [context7](https://github.com/upstash/context7)
 - Figma
 - [Chrome DevTools](https://github.com/ChromeDevTools/chrome-devtools-mcp)
-- [context7](https://github.com/upstash/context7)
 
 ## application
 
@@ -44,15 +49,15 @@ After install/update, restart Claude Code to apply changes.
 - LINE
 - Slack
 - Todoist
-- Visual Studio Code
 
 ## development
 
 - docker-compose
 - Docker Desktop for Mac
 - Git
-- Go
 - Homebrew
 - Postman
+- Visual Studio Code
 - Claude Code
 - gh
+- [Playwright CLI](https://github.com/microsoft/playwright-cli)

@@ -1,12 +1,25 @@
+---
+description: PRのレビューコメントとCIエラーを自動修正する
+argument-hint: [PR番号]
+allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api repos/*/pulls/*/comments *), Bash(gh api repos/*/pulls/*/reviews *), Bash(gh repo view *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Read, Write, Edit, Grep, Glob, WebFetch
+---
+
 # PR自動修正コマンド
 
 PRのレビューコメントとCIエラーを自動修正する。
 
 ## 使用方法
-```
-/pr-fix [pr番号]
+```text
+/pr-fix [PR番号]
 ```
 PR番号省略時は現在のブランチのPRを使用。
+
+## PR情報（自動取得）
+- PR詳細: !`gh pr view $0 --json title,body,url,number 2>/dev/null || gh pr view --json title,body,url,number`
+- レビューコメント（インライン）: !`gh api repos/$(gh repo view --json nameWithOwner -q .nameWithOwner)/pulls/$(gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number)/comments 2>/dev/null || echo "レビューコメントを取得できません"`
+- レビュー（承認・変更要求）: !`gh api repos/$(gh repo view --json nameWithOwner -q .nameWithOwner)/pulls/$(gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number)/reviews 2>/dev/null || echo "レビューを取得できません"`
+- CIステータス: !`gh pr checks $0 2>/dev/null || gh pr checks`
+- PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
 
 ## 修正対象
 ### レビューコメント
@@ -17,18 +30,16 @@ PR番号省略時は現在のブランチのPRを使用。
 - lint/type/test/build エラーを自動修正
 
 ## 手順
-1. PR番号が指定されていない場合は `gh pr view` (引数なし)で現在のブランチのPRを取得。指定されている場合は `gh pr view <番号>` でPR情報取得
-2. `gh api pulls/:pr/comments` でレビューコメント取得
-3. コンフリクト確認、あれば解消
-4. `gh pr checks` でCIエラー確認
-5. ユーザーに修正方針を確認（AskUserQuestion）
-6. 各レビューコメント修正について:
+1. 上記の自動取得データを元に修正対象を特定
+2. コンフリクト確認、あれば解消
+3. ユーザーに修正方針を確認（AskUserQuestion）
+4. 各レビューコメント修正について:
    a. 修正を適用
    b. コミット・プッシュ
    c. ボットコメントに返信（人間のコメントには返信しない）
-7. CIエラー修正を適用
-8. コミット・プッシュ
-9. CLAUDE.md更新が必要か確認
+5. CIエラー修正を適用
+6. コミット・プッシュ
+7. CLAUDE.md更新が必要か確認
 
 ## ユーザー確認（AskUserQuestion）
 

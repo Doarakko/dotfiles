@@ -1,3 +1,9 @@
+---
+description: 現在のローカル変更をレビューする
+argument-hint: [対象ファイル・ディレクトリ]
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(npm run lint *), Bash(npx eslint *), Bash(ruff check *), Bash(golangci-lint run *), Read, Grep, Glob
+---
+
 # コード差分レビューコマンド
 
 現在のローカル変更をレビューする。
@@ -8,8 +14,16 @@
 ```
 対象省略時は全変更をレビュー。
 
+## 変更情報（自動取得）
+- ステータス: !`git status --short`
+- ステージ済み差分: !`git diff --cached`
+- 未ステージ差分: !`git diff`
+
+## 対象
+指定された対象: $ARGUMENTS（省略時は全変更）
+
 ## 手順
-1. `git status`、`git diff` で変更取得
+1. 上記の自動取得データを元にレビュー
 2. プロジェクト環境を分析（言語、フレームワーク）
 3. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）
 4. 自動チェックツール実行（ESLint、Ruff、golangci-lint等）

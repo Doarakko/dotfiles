@@ -1,6 +1,85 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "plansDirectory": ".claude/plans",
+  "feedbackSurveyState": {
+    "lastShownTime": 1754295920518
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code post-task"
+          }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code post-todo"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code pre-task"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code session-end"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code session-start"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code stop"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code user-prompt-submit"
+          }
+        ]
+      }
+    ]
+  },
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
@@ -32,10 +111,20 @@
       "Bash(tail:*)",
       "Bash(jq:*)",
       "mcp__playwright__*"
+    ],
+    "deny": [
+      "Read(./.entire/metadata/**)"
     ]
   },
-  "feedbackSurveyState": {
-    "lastShownTime": 1754295920518
-  },
-  "alwaysThinkingEnabled": true
+  "plansDirectory": ".claude/plans",
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com"
+      ]
+    }
+  }
 }

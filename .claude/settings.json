@@ -120,10 +120,15 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
+    "ignoreViolations": {
+      "git": [".git/config"]
+    },
     "network": {
       "allowedDomains": [
         "github.com",
-        "api.github.com"
+        "api.github.com",
+        "json.schemastore.org",
+        "www.schemastore.org"
       ]
     }
   }

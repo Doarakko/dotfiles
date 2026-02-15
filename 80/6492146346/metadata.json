@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "806492146346",
+  "strategy": "manual-commit",
+  "branch": "feature/add-command-frontmatter-and-update-settings",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".claude/plans/cheerful-finding-rabin.md",
+    "README.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/80/6492146346/0/metadata.json",
+      "transcript": "/80/6492146346/0/full.jsonl",
+      "context": "/80/6492146346/0/context.md",
+      "content_hash": "/80/6492146346/0/content_hash.txt",
+      "prompt": "/80/6492146346/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 25,
+    "cache_creation_tokens": 17024,
+    "cache_read_tokens": 494767,
+    "output_tokens": 2803,
+    "api_call_count": 15
+  }
+}

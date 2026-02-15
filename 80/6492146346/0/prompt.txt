@@ -1,0 +1,17 @@
+公式プラグインはどんなものがある
+
+---
+
+lspはどうやったら有効になるの？
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+pyrightとは？
+
+---
+
+上記3つのインストール方法をreadmeに追加して

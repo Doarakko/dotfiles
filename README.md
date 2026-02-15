@@ -53,4 +53,4 @@ After install/update, restart Claude Code to apply changes.
 - Visual Studio Code
 - Claude Code
 - gh
-- [Playwright](https://github.com/microsoft/playwright)
+- [Playwright CLI](https://github.com/microsoft/playwright-cli)

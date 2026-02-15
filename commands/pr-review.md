@@ -1,7 +1,7 @@
 ---
 description: PRを詳細にレビューし、改善提案を行う
 argument-hint: <PR番号またはURL>
-allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh issue view *), Read, Grep, Glob, WebFetch
+allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api *), Bash(gh issue view *), Read, Grep, Glob, WebFetch
 ---
 
 # PRレビューコマンド

@@ -1,3 +1,9 @@
+---
+description: PRを詳細にレビューし、改善提案を行う
+argument-hint: <PR番号またはURL>
+allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh issue view *), Read, Grep, Glob, WebFetch
+---
+
 # PRレビューコマンド
 
 指定されたPRを詳細にレビューし、改善提案を行う。
@@ -7,14 +13,19 @@
 /pr-review <PR番号またはURL>
 ```
 
+## PR情報（自動取得）
+- PR詳細: !`gh pr view $0 --json title,body,url,labels,milestone 2>/dev/null || gh pr view --json title,body,url,labels,milestone`
+- PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
+- 変更ファイル一覧: !`gh pr diff $0 --name-only 2>/dev/null || gh pr diff --name-only`
+- CIステータス: !`gh pr checks $0 2>/dev/null || gh pr checks`
+
 ## 手順
-1. `gh pr view` でPR情報取得
-2. `gh pr diff` で差分取得
-3. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）
-4. レビュー結果を統合して表示
-5. 修正に入るか確認（AskUserQuestion）
-6. 修正実行後、ボットコメントに返信
-7. CLAUDE.md更新が必要か確認
+1. 上記の自動取得データを元にレビュー
+2. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）
+3. レビュー結果を統合して表示
+4. 修正に入るか確認（AskUserQuestion）
+5. 修正実行後、ボットコメントに返信
+6. CLAUDE.md更新が必要か確認
 
 ## Subagent活用
 `code-reviewer` Subagentに登録されたSkillの全観点で並列実行。

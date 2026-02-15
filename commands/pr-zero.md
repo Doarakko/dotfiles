@@ -1,3 +1,9 @@
+---
+description: 新規ブランチ作成からPR作成までを一連で実行する
+argument-hint: [--from-main]
+allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(gh pr create *), Bash(gh auth refresh *)
+---
+
 # PRゼロからワークフロー
 
 新規ブランチ作成からPR作成までを一連で実行する。
@@ -9,13 +15,21 @@
 - `--from-main`: メインブランチから新規ブランチ作成
 - 省略時: 現在のブランチから新規ブランチ作成
 
+## 現在の状態（自動取得）
+- ブランチ: !`git branch --show-current`
+- ステータス: !`git status --short`
+- 差分統計: !`git diff --stat`
+
+## オプション
+指定されたオプション: $ARGUMENTS（省略時は現在のブランチから作成）
+
 ## 重要ルール
 **既存ブランチには絶対にpushしない。必ず新規ブランチを作成する。**
 
 ## 手順
 1. 新規ブランチ作成（Conventional Branch形式）
    - 例: `feature/admin-user-role-edit-invite-form`
-2. `git status`、`git diff` で変更確認
+2. 上記の自動取得データを元に変更確認
 3. コミット分割・作成（Conventional Commits形式）
 4. `git push -u origin <branch>` でプッシュ
 5. PRテンプレート確認（`.github/PULL_REQUEST_TEMPLATE.md`等）

@@ -9,7 +9,7 @@ allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bas
 PRのレビューコメントとCIエラーを自動修正する。
 
 ## 使用方法
-```
+```text
 /pr-fix [PR番号]
 ```
 PR番号省略時は現在のブランチのPRを使用。

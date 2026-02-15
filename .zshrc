@@ -94,4 +94,4 @@ gwt-clean() {
 }
 
 # Claude Code plugin update
-alias claude-plugin-update='claude plugin marketplace update && claude plugin uninstall doarakko-config@doarakko-config && claude plugin install doarakko-config@doarakko-config'
+alias claude-plugin-update='claude plugin marketplace update && claude plugin uninstall doarakko-config@doarakko-config; claude plugin install doarakko-config@doarakko-config'

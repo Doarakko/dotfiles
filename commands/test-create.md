@@ -9,7 +9,7 @@ allowed-tools: Bash(git diff *), Bash(npm *), Bash(npx *), Bash(go test *), Bash
 現在の差分から変更されたファイルを検出し、テストを自動生成する。
 
 ## 使用方法
-```
+```text
 /test-create [対象ファイルパス]
 ```
 ファイルパス省略時は差分から自動検出。

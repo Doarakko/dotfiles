@@ -1,85 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "feedbackSurveyState": {
-    "lastShownTime": 1754295920518
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code post-task"
-          }
-        ]
-      },
-      {
-        "matcher": "TodoWrite",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code post-todo"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code pre-task"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code session-end"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code session-start"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code stop"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "entire hooks claude-code user-prompt-submit"
-          }
-        ]
-      }
-    ]
-  },
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
@@ -90,10 +10,10 @@
       "Bash(gemini *)",
       "Bash(gh issue create *)",
       "Bash(gh pr create *)",
-      "Bash(gh pr checks *)",
-      "Bash(gh pr diff *)",
-      "Bash(gh pr list *)",
-      "Bash(gh pr view *)",
+      "Bash(gh pr checks*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr view*)",
       "Bash(gh run list *)",
       "Bash(gh repo view *)",
       "Bash(git add *)",
@@ -112,9 +32,7 @@
       "Bash(jq *)",
       "mcp__playwright__*"
     ],
-    "deny": [
-      "Read(./.entire/metadata/**)"
-    ]
+    "deny": []
   },
   "plansDirectory": ".claude/plans",
   "sandbox": {

@@ -1,7 +1,7 @@
 ---
 description: PRのレビューコメントとCIエラーを自動修正する
 argument-hint: [PR番号]
-allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api repos/*/pulls/*/comments *), Bash(gh api repos/*/pulls/*/reviews *), Bash(gh repo view *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Read, Write, Edit, Grep, Glob, WebFetch
+allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api repos/*/pulls/*/comments*), Bash(gh api repos/*/pulls/*/reviews*), Bash(gh repo view *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Read, Write, Edit, Grep, Glob, WebFetch
 ---
 
 # PR自動修正コマンド
@@ -16,10 +16,14 @@ PR番号省略時は現在のブランチのPRを使用。
 
 ## PR情報（自動取得）
 - PR詳細: !`gh pr view $0 --json title,body,url,number 2>/dev/null || gh pr view --json title,body,url,number`
-- レビューコメント（インライン）: !`gh api repos/$(gh repo view --json nameWithOwner -q .nameWithOwner)/pulls/$(gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number)/comments 2>/dev/null || echo "レビューコメントを取得できません"`
-- レビュー（承認・変更要求）: !`gh api repos/$(gh repo view --json nameWithOwner -q .nameWithOwner)/pulls/$(gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number)/reviews 2>/dev/null || echo "レビューを取得できません"`
 - CIステータス: !`gh pr checks $0 2>/dev/null || gh pr checks`
 - PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
+
+## PR情報（手動取得）
+以下はBashツールで手動実行すること:
+1. リポジトリ名とPR番号を取得: `gh repo view --json nameWithOwner -q .nameWithOwner` と `gh pr view $0 --json number -q .number`
+2. レビューコメント（インライン）: `gh api repos/{owner}/{repo}/pulls/{number}/comments`
+3. レビュー（承認・変更要求）: `gh api repos/{owner}/{repo}/pulls/{number}/reviews`
 
 ## 修正対象
 ### レビューコメント
@@ -30,7 +34,7 @@ PR番号省略時は現在のブランチのPRを使用。
 - lint/type/test/build エラーを自動修正
 
 ## 手順
-1. 上記の自動取得データを元に修正対象を特定
+1. 自動取得データと手動取得データ（レビューコメント・レビュー）を元に修正対象を特定
 2. コンフリクト確認、あれば解消
 3. ユーザーに修正方針を確認（AskUserQuestion）
 4. 各レビューコメント修正について:

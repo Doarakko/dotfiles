@@ -13,7 +13,7 @@ allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(
 ```
 
 ## CI情報（自動取得）
-- CIステータス: !`gh pr checks 2>/dev/null || echo "PRが見つかりません"`
+- CIステータス: !`gh pr checks 2>/dev/null; true`
 - 現在のブランチ: !`git branch --show-current`
 - 未コミットの変更: !`git status --short`
 

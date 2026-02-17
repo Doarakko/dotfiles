@@ -16,7 +16,7 @@ PR番号省略時は現在のブランチのPRを使用。
 
 ## PR情報（自動取得）
 - PR詳細: !`gh pr view $0 --json title,body,url,number 2>/dev/null || gh pr view --json title,body,url,number`
-- CIステータス: !`gh pr checks $0 2>/dev/null || gh pr checks`
+- CIステータス: !`gh pr checks $0 2>/dev/null; true`
 - PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
 
 ## PR情報（手動取得）

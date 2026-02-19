@@ -93,5 +93,29 @@ gwt-clean() {
   echo "Done. Removed $deleted_count worktree(s)."
 }
 
+# 現在のworktreeからメインのworktreeに移動する
+gwt-root() {
+  local git_common_dir
+  local main_worktree
+
+  git_common_dir=$(git rev-parse --git-common-dir 2>/dev/null)
+  if [[ -z "$git_common_dir" ]]; then
+    echo "Error: Not in a git repository" >&2
+    return 1
+  fi
+
+  # git-common-dirはメインworktreeの.gitを指す
+  # 相対パスの場合があるのでabsolute pathに変換
+  main_worktree=$(cd "$git_common_dir"/.. && pwd)
+
+  if [[ "$(git rev-parse --show-toplevel)" == "$main_worktree" ]]; then
+    echo "Already in the main worktree: $main_worktree"
+    return 0
+  fi
+
+  echo "Switching to main worktree: $main_worktree"
+  cd "$main_worktree"
+}
+
 # Claude Code plugin update
 alias claude-plugin-update='claude plugin marketplace update && claude plugin uninstall doarakko-config@doarakko-config; claude plugin install doarakko-config@doarakko-config'

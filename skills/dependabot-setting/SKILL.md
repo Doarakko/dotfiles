@@ -1,5 +1,5 @@
 ---
-name: dependabot
+name: dependabot-setting
 description: Dependabotの設定ファイル（.github/dependabot.yml）を生成するときに使用
 allowed-tools: Read, Write, Glob, Grep, Bash(ls *), Bash(git remote *), Bash(mkdir *)
 ---

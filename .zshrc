@@ -117,5 +117,9 @@ gwt-root() {
   cd "$main_worktree"
 }
 
+# Claude Code
+alias cc='claude'
+alias ccw='claude --worktree'
+
 # Claude Code plugin update
 alias claude-plugin-update='claude plugin marketplace update && claude plugin uninstall doarakko-config@doarakko-config; claude plugin install doarakko-config@doarakko-config'

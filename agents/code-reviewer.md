@@ -2,7 +2,7 @@
 name: code-reviewer
 description: コードレビューを実行する（読み取り専用）
 tools: Read, Grep, Glob, Bash, WebFetch
-skills: security-review, test-review, coding-style-guide, pr-compliance-review
+skills: security-review, test-review, coding-style-guide-review, pr-compliance-review
 ---
 
 # コードレビューエージェント
@@ -19,7 +19,7 @@ skills: security-review, test-review, coding-style-guide, pr-compliance-review
    - security: security-review Skillの基準でチェック
    - test: test-review Skillの基準でチェック
    - quality: コード品質（命名、重複、複雑度、デッドコード）
-   - guidelines: coding-style-guide Skillの基準でチェック（プロジェクト固有の規約準拠）
+   - guidelines: coding-style-guide-review Skillの基準でチェック（プロジェクト固有の規約準拠）
    - pr-compliance: pr-compliance-review Skillの基準でチェック（PR・Issue要件の充足）
 3. 問題点と改善提案をサマリーとして返す
 

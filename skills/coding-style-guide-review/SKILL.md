@@ -1,5 +1,5 @@
 ---
-name: coding-style-guide
+name: coding-style-guide-review
 description: プロジェクト固有のコーディングガイドラインに基づくレビューを行うとき、規約準拠チェックを行うときに使用
 allowed-tools: Read, Grep, Glob
 ---

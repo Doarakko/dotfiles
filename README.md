@@ -8,32 +8,23 @@ cd ~/src
 git clone https://github.com/Doarakko/dotfiles.git
 ```
 
+Add `source ~/src/dotfiles/.zshrc` to your `~/.zshrc` to load the configuration.
+
 ### Claude Code
 
-#### Original Plugin
-
-##### Install
+install
 
 ```bash
-claude plugin marketplace add ~/src/dotfiles
-claude plugin install doarakko-config@doarakko-config
+claude-plugin-install
 ```
 
-##### Update
+update
 
 ```bash
 claude-plugin-update
 ```
 
 After install/update, restart Claude Code to apply changes.
-
-#### LSP Plugin
-
-```bash
-claude plugin install gopls-lsp@claude-plugins-official
-claude plugin install typescript-lsp@claude-plugins-official
-claude plugin install pyright-lsp@claude-plugins-official
-```
 
 #### MCP Server
 

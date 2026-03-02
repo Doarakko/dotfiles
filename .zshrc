@@ -118,11 +118,9 @@ gwt-root() {
 }
 
 # Claude Code
+export EDITOR="code-insiders --wait"
+
 alias cc='claude'
 alias ccw='claude --worktree'
-
-# Claude Code plugin install
 alias claude-plugin-install='claude plugin marketplace add ~/src/dotfiles && claude plugin install doarakko-config@doarakko-config && claude plugin marketplace add hashicorp/agent-skills && claude plugin install terraform-code-generation@hashicorp && claude plugin install terraform-module-generation@hashicorp && claude plugin install gopls-lsp@claude-plugins-official && claude plugin install typescript-lsp@claude-plugins-official && claude plugin install pyright-lsp@claude-plugins-official'
-
-# Claude Code plugin update
 alias claude-plugin-update='claude plugin marketplace update && claude plugin uninstall doarakko-config@doarakko-config; claude plugin install doarakko-config@doarakko-config && claude plugin uninstall terraform-code-generation@hashicorp; claude plugin install terraform-code-generation@hashicorp && claude plugin uninstall terraform-module-generation@hashicorp; claude plugin install terraform-module-generation@hashicorp'

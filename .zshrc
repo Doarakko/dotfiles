@@ -118,7 +118,7 @@ gwt-root() {
 }
 
 # Claude Code
-export EDITOR="code-insiders --wait"
+export EDITOR="code-insiders"
 
 alias cc='claude'
 alias ccw='claude --worktree'

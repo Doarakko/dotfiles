@@ -117,6 +117,30 @@ gwt-root() {
   cd "$main_worktree"
 }
 
+# ブランチ名を指定してチェックアウトする。worktreeがあればそこにcdする
+gco() {
+  local branch_name="$1"
+
+  if [[ -z "$branch_name" ]]; then
+    echo "Usage: gco <branch-name>" >&2
+    return 1
+  fi
+
+  # worktreeを探す
+  local worktree_path
+  worktree_path=$(git worktree list --porcelain | awk -v branch="refs/heads/$branch_name" '
+    /^worktree / { path = substr($0, 10) }
+    $0 == "branch " branch { print path; exit }
+  ')
+
+  if [[ -n "$worktree_path" ]]; then
+    echo "Switching to worktree: $worktree_path (branch: $branch_name)"
+    cd "$worktree_path"
+  else
+    git checkout "$branch_name"
+  fi
+}
+
 # Claude Code
 export EDITOR="code-insiders"
 

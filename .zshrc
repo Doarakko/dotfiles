@@ -117,28 +117,28 @@ gwt-root() {
   cd "$main_worktree"
 }
 
-# ブランチ名を指定して既存のworktreeに移動する
-gwt-cd() {
+# ブランチ名を指定してチェックアウトする。worktreeがあればそこにcdする
+gco() {
   local branch_name="$1"
 
   if [[ -z "$branch_name" ]]; then
-    echo "Usage: gwt-cd <branch-name>" >&2
+    echo "Usage: gco <branch-name>" >&2
     return 1
   fi
 
+  # worktreeを探す
   local worktree_path
   worktree_path=$(git worktree list --porcelain | awk -v branch="refs/heads/$branch_name" '
     /^worktree / { path = substr($0, 10) }
     $0 == "branch " branch { print path; exit }
   ')
 
-  if [[ -z "$worktree_path" ]]; then
-    echo "Error: No worktree found for branch '$branch_name'" >&2
-    return 1
+  if [[ -n "$worktree_path" ]]; then
+    echo "Switching to worktree: $worktree_path (branch: $branch_name)"
+    cd "$worktree_path"
+  else
+    git checkout "$branch_name"
   fi
-
-  echo "Switching to worktree: $worktree_path (branch: $branch_name)"
-  cd "$worktree_path"
 }
 
 # Claude Code

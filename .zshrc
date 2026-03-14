@@ -141,6 +141,34 @@ gco() {
   fi
 }
 
+# マージ済みブランチを削除する
+gdm() {
+  local base
+
+  if [[ -n "$1" ]]; then
+    base="$1"
+  elif git show-ref --verify --quiet refs/heads/main; then
+    base="main"
+  elif git show-ref --verify --quiet refs/heads/master; then
+    base="master"
+  else
+    echo "Error: Could not find main or master branch" >&2
+    return 1
+  fi
+
+  git checkout "$base" || return 1
+
+  local used
+  used=$(git worktree list --porcelain | awk '/branch /{print $2}' | sed 's#refs/heads/##')
+
+  git branch --merged "$base" --format='%(refname:short)' \
+    | grep -Ev '^(develop|main|master|production)$' \
+    | while read b; do
+        echo "$used" | grep -qx "$b" && continue
+        git branch -d "$b"
+      done
+}
+
 # Claude Code
 export EDITOR="code-insiders"
 

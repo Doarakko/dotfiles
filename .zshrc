@@ -1,5 +1,7 @@
 export PS1="[%n] %~ $"
 
+alias code="code-insiders"
+
 # git worktreeで新しいブランチを作成し、そのディレクトリに移動する
 gwt() {
   local branch_name="$1"

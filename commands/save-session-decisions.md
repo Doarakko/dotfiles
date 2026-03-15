@@ -16,7 +16,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git diff *), Bash(git log *),
 ## 出力先
 - 引数が指定された場合: `$ARGUMENTS` ディレクトリ配下に保存
 - 引数なし: `docs/decisions/` ディレクトリ配下に保存
-- ファイル名: `YYYY-MM-DD-<セッションの主要トピックを英語で要約>.md`
+- ファイル名: `session-decision-YYYY-MM-DD-<セッションの主要トピックを英語で要約>.md`
 
 ## 手順
 

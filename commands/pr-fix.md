@@ -18,12 +18,10 @@ PR番号省略時は現在のブランチのPRを使用。
 - PR詳細: !`gh pr view $0 --json title,body,url,number 2>/dev/null || gh pr view --json title,body,url,number`
 - CIステータス: !`gh pr checks $0 2>/dev/null; true`
 - PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
-
-## PR情報（手動取得）
-以下はBashツールで手動実行すること:
-1. リポジトリ名とPR番号を取得: `gh repo view --json nameWithOwner -q .nameWithOwner` と `gh pr view $0 --json number -q .number`
-2. レビューコメント（インライン）: `gh api repos/{owner}/{repo}/pulls/{number}/comments`
-3. レビュー（承認・変更要求）: `gh api repos/{owner}/{repo}/pulls/{number}/reviews`
+- リポジトリ名: !`gh repo view --json nameWithOwner -q .nameWithOwner`
+- PR番号: !`gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number`
+- レビューコメント（インライン）: !`PR_NUM=$(gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number) && REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner) && gh api "repos/${REPO}/pulls/${PR_NUM}/comments"`
+- レビュー（承認・変更要求）: !`PR_NUM=$(gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number) && REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner) && gh api "repos/${REPO}/pulls/${PR_NUM}/reviews"`
 
 ## 修正対象
 ### レビューコメント
@@ -34,7 +32,7 @@ PR番号省略時は現在のブランチのPRを使用。
 - lint/type/test/build エラーを自動修正
 
 ## 手順
-1. 自動取得データと手動取得データ（レビューコメント・レビュー）を元に修正対象を特定
+1. 自動取得データを元に修正対象を特定
 2. コンフリクト確認、あれば解消
 3. ユーザーに修正方針を確認（AskUserQuestion）
 4. 各レビューコメント修正について:

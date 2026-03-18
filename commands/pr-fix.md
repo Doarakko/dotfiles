@@ -20,8 +20,8 @@ PR番号省略時は現在のブランチのPRを使用。
 - PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
 - リポジトリ名: !`gh repo view --json nameWithOwner -q .nameWithOwner`
 - PR番号: !`gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number`
-- レビューコメント（インライン）: !`PR_NUM=$(gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number) && REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner) && gh api "repos/${REPO}/pulls/${PR_NUM}/comments"`
-- レビュー（承認・変更要求）: !`PR_NUM=$(gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number) && REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner) && gh api "repos/${REPO}/pulls/${PR_NUM}/reviews"`
+- レビューコメント（インライン）: 上記のPR番号とリポジトリ名を使って `gh api "repos/{リポジトリ名}/pulls/{PR番号}/comments"` で取得すること
+- レビュー（承認・変更要求）: 上記のPR番号とリポジトリ名を使って `gh api "repos/{リポジトリ名}/pulls/{PR番号}/reviews"` で取得すること
 
 ## 修正対象
 ### レビューコメント

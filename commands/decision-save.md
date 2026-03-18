@@ -9,8 +9,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git diff *), Bash(git log *),
 
 ## 使用方法
 ```
-/session-decision
-/session-decision docs/decisions
+/decision-save
+/decision-save docs/decisions
 ```
 
 ## 出力先

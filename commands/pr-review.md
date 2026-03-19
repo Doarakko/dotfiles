@@ -17,7 +17,7 @@ allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bas
 - PR詳細: !`gh pr view $0 --json title,body,url,labels,milestone 2>/dev/null || gh pr view --json title,body,url,labels,milestone`
 - PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
 - 変更ファイル一覧: !`gh pr diff $0 --name-only 2>/dev/null || gh pr diff --name-only`
-- CIステータス: !`gh pr checks $0 2>/dev/null || gh pr checks`
+- CIステータス: !`gh pr checks $0 2>/dev/null || gh pr checks 2>/dev/null || echo "No CI checks"`
 
 ## 手順
 1. 上記の自動取得データを元にレビュー

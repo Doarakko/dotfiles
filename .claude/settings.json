@@ -34,7 +34,6 @@
     ],
     "deny": []
   },
-  "plansDirectory": ".claude/plans",
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,

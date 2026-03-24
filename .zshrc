@@ -43,25 +43,23 @@ gwt() {
   fi
 }
 
-# マージ済みブランチのworktreeを削除する
-gwt-clean() {
-  local repo_root
-  local main_branch
-  local worktree_path
-  local branch_name
+# マージ済みブランチとworktreeを一括削除する
+gb-clean() {
+  local base
   local deleted_count=0
 
-  repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
-  if [[ -z "$repo_root" ]]; then
+  if [[ -z "$(git rev-parse --show-toplevel 2>/dev/null)" ]]; then
     echo "Error: Not in a git repository" >&2
     return 1
   fi
 
-  # メインブランチを特定（main or master）
-  if git show-ref --verify --quiet refs/heads/main; then
-    main_branch="main"
+  # ベースブランチを特定
+  if [[ -n "$1" ]]; then
+    base="$1"
+  elif git show-ref --verify --quiet refs/heads/main; then
+    base="main"
   elif git show-ref --verify --quiet refs/heads/master; then
-    main_branch="master"
+    base="master"
   else
     echo "Error: Could not find main or master branch" >&2
     return 1
@@ -70,29 +68,43 @@ gwt-clean() {
   # リモートの最新情報を取得
   git fetch --prune 2>/dev/null
 
-  # worktree一覧を取得して処理（プロセス置換でサブシェルを回避）
+  # worktree内にいる場合はメインworktreeに移動
+  local main_worktree
+  main_worktree=$(git worktree list --porcelain | awk '/^worktree /{print substr($0,10); exit}')
+  if [[ "$(git rev-parse --show-toplevel)" != "$main_worktree" ]]; then
+    echo "Switching to main worktree: $main_worktree"
+    cd "$main_worktree"
+  fi
+
+  # ベースブランチにチェックアウト
+  git checkout "$base" || return 1
+
+  # worktreeで使用中のブランチとパスのマップを構築
+  local -A worktree_map
+  local wt_path wt_branch
   while read -r line; do
     if [[ "$line" == worktree\ * ]]; then
-      worktree_path="${line#worktree }"
+      wt_path="${line#worktree }"
     elif [[ "$line" == branch\ * ]]; then
-      branch_name="${line#branch refs/heads/}"
-
-      # メインブランチ自体はスキップ
-      if [[ "$branch_name" == "$main_branch" ]]; then
-        continue
-      fi
-
-      # メインブランチにマージ済みか確認（+はworktree、*は現在のブランチを示す）
-      if git branch --merged "$main_branch" | grep -qE "^[[:space:]*+]*${branch_name}$"; then
-        echo "Removing: $worktree_path (branch: $branch_name)"
-        git worktree remove "$worktree_path" 2>/dev/null
-        git branch -d "$branch_name" 2>/dev/null
-        ((deleted_count++))
-      fi
+      wt_branch="${line#branch refs/heads/}"
+      worktree_map[$wt_branch]="$wt_path"
     fi
   done < <(git worktree list --porcelain)
 
-  echo "Done. Removed $deleted_count worktree(s)."
+  # マージ済みブランチを削除（worktreeがあれば先に削除）
+  while read -r b; do
+    if [[ -n "${worktree_map[$b]}" ]]; then
+      echo "Removing worktree: ${worktree_map[$b]} (branch: $b)"
+      if ! git worktree remove "${worktree_map[$b]}"; then
+        echo "Warning: Could not remove worktree ${worktree_map[$b]}, skipping branch $b" >&2
+        continue
+      fi
+    fi
+    git branch -d "$b" && ((deleted_count++))
+  done < <(git branch --merged "$base" --format='%(refname:short)' \
+             | grep -Ev '^(develop|main|master|production)$')
+
+  echo "Done. Cleaned up $deleted_count merged branch(es)."
 }
 
 # 現在のworktreeからメインのworktreeに移動する
@@ -141,34 +153,6 @@ gco() {
   else
     git checkout "$branch_name"
   fi
-}
-
-# マージ済みブランチを削除する
-gdm() {
-  local base
-
-  if [[ -n "$1" ]]; then
-    base="$1"
-  elif git show-ref --verify --quiet refs/heads/main; then
-    base="main"
-  elif git show-ref --verify --quiet refs/heads/master; then
-    base="master"
-  else
-    echo "Error: Could not find main or master branch" >&2
-    return 1
-  fi
-
-  git checkout "$base" || return 1
-
-  local used
-  used=$(git worktree list --porcelain | awk '/branch /{print $2}' | sed 's#refs/heads/##')
-
-  git branch --merged "$base" --format='%(refname:short)' \
-    | grep -Ev '^(develop|main|master|production)$' \
-    | while read b; do
-        echo "$used" | grep -qx "$b" && continue
-        git branch -d "$b"
-      done
 }
 
 # Claude Code

@@ -19,7 +19,11 @@ allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(
 
 ## 手順
 1. 上記の自動取得データからCI失敗を特定
-2. コンフリクト確認、あれば解消
+2. コンフリクト確認・解消
+   a. `git fetch origin` でリモートを取得
+   b. `git merge --no-commit --no-ff origin/master` でコンフリクトを確認
+   c. コンフリクトがなければ `git merge --abort`
+   d. コンフリクトがあれば解消してコミット
 3. 失敗タイプに応じて修正:
    - lint: 自動修正ツール実行
    - type: 型エラーを分析・修正

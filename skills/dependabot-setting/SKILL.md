@@ -33,6 +33,23 @@ allowed-tools: Read, Write, Glob, Grep, Bash(ls *), Bash(git remote *), Bash(mkd
 - **個人リポジトリ**: `interval: "monthly"` を使用
 - **Organizationリポジトリ**: ユーザーに希望するスケジュール間隔（`daily`, `weekly`, `monthly`）を確認する
 
+### 2.1. クールダウンの決定
+クールダウンを設定するかユーザーに確認する。
+参考: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#cooldown
+
+ユーザーがクールダウンを希望する場合、以下の値をユーザーに確認して決定する。
+
+| パラメータ | 値の範囲 | 説明 |
+|-----------|---------|------|
+| `default-days` | 1〜90 | SemVerカテゴリに該当しない依存の待機日数 |
+| `semver-major-days` | 1〜90 | メジャーバージョン更新の待機日数 |
+| `semver-minor-days` | 1〜90 | マイナーバージョン更新の待機日数 |
+| `semver-patch-days` | 0〜90 | パッチバージョン更新の待機日数 |
+
+**注意事項:**
+- クールダウンはバージョン更新のみに適用され、セキュリティ更新には適用されない
+- SemVer非対応のエコシステム（`github-actions`, `docker`, `terraform`）には `default-days` のみ設定する
+
 ### 3. 既存設定の確認
 - `.github/dependabot.yml` が既に存在する場合、内容を読み取りユーザーに上書き確認する
 
@@ -83,8 +100,13 @@ allowed-tools: Read, Write, Glob, Grep, Bash(ls *), Bash(git remote *), Bash(mkd
         - "*"
   ```
 
+#### クールダウン設定
+手順2.1でクールダウンを設定する場合、各エコシステムに `cooldown` を追加する。
+SemVer非対応のエコシステム（`github-actions`, `docker`, `terraform`）には `default-days` のみ設定する。
+
 #### 共通設定
 - `schedule.interval`: 手順2で決定した値
+- `cooldown`: 手順2.1で決定した値（設定する場合）
 - `directory`: マニフェストファイルが存在するディレクトリ（ルートなら `"/"`）
 
 ### 6. 出力
@@ -92,7 +114,9 @@ allowed-tools: Read, Write, Glob, Grep, Bash(ls *), Bash(git remote *), Bash(mkd
 - `.github/` ディレクトリが存在しない場合は作成する
 - 生成した設定の概要をユーザーに表示する
 
-## 生成例（個人リポジトリの場合）
+## 生成例
+
+### クールダウンなし（個人リポジトリの場合）
 
 ```yaml
 version: 2
@@ -132,6 +156,41 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+```
+
+### クールダウンあり
+
+```yaml
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      development:
+        patterns:
+          - "eslint*"
+          - "prettier*"
+          - "@types/*"
+          - "jest*"
+          - "@testing-library/*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      all-actions:
+        patterns:
+          - "*"
 ```
 
 ## 絶対に守るべきルール

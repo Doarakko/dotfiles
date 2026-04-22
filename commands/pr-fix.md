@@ -20,8 +20,11 @@ PR番号省略時は現在のブランチのPRを使用。
 - PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
 - リポジトリ名: !`gh repo view --json nameWithOwner -q .nameWithOwner`
 - PR番号: !`gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number`
-- レビューコメント（インライン）: 上記のPR番号とリポジトリ名を使って `gh api "repos/{リポジトリ名}/pulls/{PR番号}/comments"` で取得すること
-- レビュー（承認・変更要求）: 上記のPR番号とリポジトリ名を使って `gh api "repos/{リポジトリ名}/pulls/{PR番号}/reviews"` で取得すること
+- レビュー一覧: 上記のPR番号とリポジトリ名を使って `gh api "repos/{リポジトリ名}/pulls/{PR番号}/reviews"` で取得し、各レビューの `id` と `user.login` を得る（承認・変更要求の判定にも使用）
+- レビューコメント（インライン／通常）: 上記のPR番号とリポジトリ名を使って `gh api "repos/{リポジトリ名}/pulls/{PR番号}/comments"` で取得すること
+- レビュー単位のコメント（Codex など）: 上記で取得した各 `review_id` について `gh api "repos/{リポジトリ名}/pulls/{PR番号}/reviews/{review_id}/comments"` を実行して取得すること
+  - `chatgpt-codex-connector` が投稿したレビューのコメントは `/pulls/{PR番号}/comments` には含まれず、この経路でしか取得できないため必須
+  - 取得したコメントは、インライン取得分とマージし `id` で重複排除すること
 
 ## 修正対象
 ### レビューコメント
@@ -32,7 +35,7 @@ PR番号省略時は現在のブランチのPRを使用。
 - lint/type/test/build エラーを自動修正
 
 ## 手順
-1. 自動取得データを元に修正対象を特定
+1. 自動取得データを元に修正対象を特定（Codex 由来のコメントは `/reviews/{review_id}/comments` から取得したものを必ず含めること）
 2. コンフリクト確認・解消
    a. `git fetch origin` でリモートを取得
    b. `git merge --no-commit --no-ff origin/master` でコンフリクトを確認

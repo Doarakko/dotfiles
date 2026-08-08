@@ -15,14 +15,16 @@ Add `source ~/src/dotfiles/.zshrc` to your `~/.zshrc` to load the configuration.
 install
 
 ```bash
-claude-plugin-install
+ccpi
 ```
 
 update
 
 ```bash
-claude-plugin-update
+ccpu
 ```
+
+Both register the marketplaces listed in `CLAUDE_MARKETPLACES` first, then process every plugin in `CLAUDE_PLUGINS` (defined in `.zshrc`). Add or remove plugins in those arrays only — `ccpi` and `ccpu` share them.
 
 After install/update, restart Claude Code to apply changes.
 

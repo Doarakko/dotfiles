@@ -173,8 +173,8 @@ CLAUDE_MARKETPLACES=(
 # インストールするプラグイン（ccpi/ccpuで共有）
 CLAUDE_PLUGINS=(
   doarakko-config@doarakko-config
-  terraform-code-generation@hashicorp
-  terraform-module-generation@hashicorp
+  terraform@hashicorp
+  packer@hashicorp
   example-skills@anthropic-agent-skills
   context7@claude-plugins-official
   claude-md-management@claude-plugins-official

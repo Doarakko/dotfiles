@@ -10,6 +10,8 @@ git clone https://github.com/Doarakko/dotfiles.git
 
 Add `source ~/src/dotfiles/.zshrc` to your `~/.zshrc` to load the configuration.
 
+Keep `~/.zshrc` limited to machine-specific settings (PATH entries, version managers, tool shell integrations) plus that one `source` line. Never copy the contents of this repository's `.zshrc` into `~/.zshrc` — the copy goes stale and changes made here stop taking effect.
+
 ### Claude Code
 
 install

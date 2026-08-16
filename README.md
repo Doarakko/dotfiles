@@ -10,19 +10,23 @@ git clone https://github.com/Doarakko/dotfiles.git
 
 Add `source ~/src/dotfiles/.zshrc` to your `~/.zshrc` to load the configuration.
 
+Keep `~/.zshrc` limited to machine-specific settings (PATH entries, version managers, tool shell integrations) plus that one `source` line. Never copy the contents of this repository's `.zshrc` into `~/.zshrc` — the copy goes stale and changes made here stop taking effect.
+
 ### Claude Code
 
 install
 
 ```bash
-claude-plugin-install
+ccpi
 ```
 
 update
 
 ```bash
-claude-plugin-update
+ccpu
 ```
+
+Both register the marketplaces listed in `CLAUDE_MARKETPLACES` first, then process every plugin in `CLAUDE_PLUGINS` (defined in `.zshrc`). Add or remove plugins in those arrays only — `ccpi` and `ccpu` share them.
 
 After install/update, restart Claude Code to apply changes.
 

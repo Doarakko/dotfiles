@@ -161,5 +161,56 @@ export EDITOR="code-insiders"
 alias cc='claude'
 alias ccw='claude --worktree'
 alias ccu='brew upgrade claude-code'
-alias ccpi='claude plugin marketplace add ~/src/dotfiles && claude plugin install doarakko-config@doarakko-config && claude plugin marketplace add hashicorp/agent-skills && claude plugin install terraform-code-generation@hashicorp && claude plugin install terraform-module-generation@hashicorp && claude plugin marketplace add anthropics/skills && claude plugin install example-skills@anthropic-agent-skills && claude plugin marketplace add anthropics/claude-plugins-official && claude plugin install claude-md-management@claude-plugins-official && claude plugin install gopls-lsp@claude-plugins-official && claude plugin install typescript-lsp@claude-plugins-official && claude plugin install pyright-lsp@claude-plugins-official && claude plugin install feature-dev@claude-plugins-official'
-alias ccpu='claude plugin marketplace update && claude plugin uninstall doarakko-config@doarakko-config; claude plugin install doarakko-config@doarakko-config && claude plugin uninstall terraform-code-generation@hashicorp; claude plugin install terraform-code-generation@hashicorp && claude plugin uninstall terraform-module-generation@hashicorp; claude plugin install terraform-module-generation@hashicorp && claude plugin uninstall example-skills@anthropic-agent-skills; claude plugin install example-skills@anthropic-agent-skills && claude plugin uninstall claude-md-management@claude-plugins-official; claude plugin install claude-md-management@claude-plugins-official && claude plugin uninstall feature-dev@claude-plugins-official; claude plugin install feature-dev@claude-plugins-official'
+
+# 登録するマーケットプレイス（ccpi/ccpuで共有）
+CLAUDE_MARKETPLACES=(
+  ~/src/dotfiles
+  hashicorp/agent-skills
+  anthropics/skills
+  anthropics/claude-plugins-official
+)
+
+# インストールするプラグイン（ccpi/ccpuで共有）
+CLAUDE_PLUGINS=(
+  doarakko-config@doarakko-config
+  terraform@hashicorp
+  packer@hashicorp
+  example-skills@anthropic-agent-skills
+  context7@claude-plugins-official
+  claude-md-management@claude-plugins-official
+  gopls-lsp@claude-plugins-official
+  typescript-lsp@claude-plugins-official
+  pyright-lsp@claude-plugins-official
+  feature-dev@claude-plugins-official
+)
+
+# マーケットプレイスを登録する（登録済みの場合は何もしない）
+cc-marketplace-add() {
+  local marketplace
+  for marketplace in "${CLAUDE_MARKETPLACES[@]}"; do
+    claude plugin marketplace add "$marketplace" || return 1
+  done
+}
+
+# プラグインをインストールする
+ccpi() {
+  cc-marketplace-add || return 1
+
+  local plugin
+  for plugin in "${CLAUDE_PLUGINS[@]}"; do
+    claude plugin install "$plugin"
+  done
+}
+
+# プラグインを再インストールして最新化する
+ccpu() {
+  # マーケットプレイス未登録だとinstallが失敗するため先に登録する
+  cc-marketplace-add || return 1
+  claude plugin marketplace update
+
+  local plugin
+  for plugin in "${CLAUDE_PLUGINS[@]}"; do
+    claude plugin uninstall "$plugin"
+    claude plugin install "$plugin"
+  done
+}

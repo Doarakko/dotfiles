@@ -30,6 +30,16 @@ Both register the marketplaces listed in `CLAUDE_MARKETPLACES` first, then proce
 
 After install/update, restart Claude Code to apply changes.
 
+#### Auto review
+
+A `Stop` hook (`hooks/auto-review.sh`) reviews uncommitted changes before Claude finishes a turn.
+
+- When the working tree has changes that have not been reviewed yet, Claude runs the `code-reviewer` subagent, fixes Critical / High findings, and reports Medium / Low findings without changing the code.
+- The hook stays silent when there is nothing to review: a clean working tree, a directory outside git, or a tree unchanged since the last review. Files ignored by git are not counted as changes.
+- It fires at most once per turn. `stop_hook_active` in the hook input guards against looping.
+- Turns that trigger a review send the completion notification twice, once before the review and once when the turn actually ends.
+- To turn it off, remove the `auto-review.sh` entry from `hooks.Stop` in `.claude-plugin/plugin.json`, or set `"disableAllHooks": true` in your settings to disable every hook.
+
 #### MCP Server
 
 - [context7](https://github.com/upstash/context7)

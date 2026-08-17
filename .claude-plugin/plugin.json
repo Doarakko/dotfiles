@@ -27,6 +27,17 @@
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/task-completion-notify.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-review.sh",
+            "timeout": 30,
+            "statusMessage": "未レビューの差分を確認中..."
+          }
+        ],
+        "description": "Review uncommitted changes before finishing"
       }
     ],
     "Notification": [

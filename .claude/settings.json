@@ -5,6 +5,7 @@
     "allow": [
       "Read",
       "Bash(cat *)",
+      "Bash(codex exec *)",
       "Bash(echo *)",
       "Bash(find *)",
       "Bash(gemini *)",

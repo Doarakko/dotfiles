@@ -1,7 +1,7 @@
 ---
 description: 新規ブランチ作成からPR作成までを一連で実行する
 argument-hint: [--from-main]
-allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(gh pr create *), Bash(gh auth refresh *)
+allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(gh pr create *), Bash(gh pr comment *), Bash(gh auth refresh *)
 ---
 
 # PRゼロからワークフロー
@@ -34,6 +34,9 @@ allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git s
 4. `git push -u origin <branch>` でプッシュ
 5. PRテンプレート確認（`.github/PULL_REQUEST_TEMPLATE.md`等）
 6. `gh pr create --draft` でドラフトPR作成
+7. `gh pr comment <PR番号> --body "@codex review"` でCodexのレビューを起動
+   - リポジトリでCodexのGitHub連携が有効でない場合は無反応になる。その場合は連携が未設定である旨を報告する
+   - 返ってきたレビューは `/pr-fix` で取得・修正する
 
 ## エラーハンドリング
 - 認証エラー時は手動PR作成URLを提供

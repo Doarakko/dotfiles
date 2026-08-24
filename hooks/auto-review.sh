@@ -62,13 +62,20 @@ fi
 
 record_hash
 
-read -r -d '' REVIEW_INSTRUCTION <<'EOF' || true
-未レビューの変更があります。完了する前に次を実行してください。
-1. doarakko-config:code-reviewer サブエージェントに現在の作業ツリーの差分をレビューさせる（観点: all）
-2. Critical / High の指摘はこのターン内で修正する
-3. Medium / Low は修正せず、最終応答に一覧として提示する
-レビューと修正が終わったらそのまま完了してよい。
-EOF
+# codex CLI が使える場合のみ、二重レビューを指示する
+if command -v codex >/dev/null 2>&1; then
+  REVIEWERS=$'   - doarakko-config:code-reviewer（観点: all）\n   - doarakko-config:codex-reviewer（未コミット差分をレビュー）'
+else
+  REVIEWERS='   - doarakko-config:code-reviewer（観点: all）'
+fi
+
+REVIEW_INSTRUCTION="未レビューの変更があります。完了する前に次を実行してください。
+1. 次のサブエージェントを 1 メッセージ内で同時に起動する
+${REVIEWERS}
+2. 各レビュアーの指摘をマージし、同一箇所を指す重複指摘は 1 件にまとめる
+3. Critical / High の指摘はこのターン内で修正する
+4. Medium / Low は修正せず、最終応答に一覧として提示する（どのレビュアー由来かを併記する）
+レビューと修正が終わったらそのまま完了してよい。"
 
 jq -n --arg context "$REVIEW_INSTRUCTION" '{
   hookSpecificOutput: {

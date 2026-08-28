@@ -1,7 +1,7 @@
 ---
 description: 現在のローカル変更をレビューする
 argument-hint: [対象ファイル・ディレクトリ]
-allowed-tools: Bash(git status *), Bash(git diff *), Bash(npm run lint *), Bash(npx eslint *), Bash(ruff check *), Bash(golangci-lint run *), Read, Grep, Glob
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(codex exec *), Bash(npm run lint *), Bash(npx eslint *), Bash(ruff check *), Bash(golangci-lint run *), Read, Grep, Glob
 ---
 
 # コード差分レビューコマンド
@@ -25,14 +25,15 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(npm run lint *), Bash(
 ## 手順
 1. 上記の自動取得データを元にレビュー
 2. プロジェクト環境を分析（言語、フレームワーク）
-3. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）
+3. `code-reviewer` Subagentと`codex-reviewer` Subagentを1メッセージ内で同時に起動（`code-reviewer`の観点はSubagentのSkill定義に従う）
+   - `codex`が使えない環境では`codex-reviewer`がスキップを報告するので、その旨を結果に含める
 4. 自動チェックツール実行（ESLint、Ruff、golangci-lint等）
-5. レビュー結果を統合して表示
+5. 両レビュアーの指摘をマージし、同一箇所を指す重複指摘は1件にまとめて表示（どのレビュアー由来かを併記）
 6. 修正に入るか確認（AskUserQuestion）
 7. CLAUDE.md更新が必要か確認
 
 ## Subagent活用
-`code-reviewer` Subagentに登録されたSkillの全観点で並列実行。
+`code-reviewer` Subagentに登録されたSkillの全観点で並列実行。あわせて`codex-reviewer` Subagentを並列で起動し、別モデルによるsecond opinionを得る。
 
 ## 出力形式
 - 変更統計（ファイル数、追加/削除行数）

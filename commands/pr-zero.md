@@ -1,7 +1,8 @@
 ---
 description: 新規ブランチ作成からPR作成までを一連で実行する
+when_to_use: PR・プルリクエストの作成を依頼されたとき、変更をPRにまとめるとき、`gh pr create`を実行しようとしたときに使用
 argument-hint: [--from-main]
-allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(gh pr create *), Bash(gh auth refresh *)
+allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(gh pr create *), Bash(gh pr view *), Bash(gh pr comment *), Bash(gh auth refresh *)
 ---
 
 # PRゼロからワークフロー
@@ -33,7 +34,16 @@ allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git s
 3. コミット分割・作成（Conventional Commits形式）
 4. `git push -u origin <branch>` でプッシュ
 5. PRテンプレート確認（`.github/PULL_REQUEST_TEMPLATE.md`等）
-6. `gh pr create --draft` でドラフトPR作成
+6. `gh pr create --draft --reviewer @copilot` でドラフトPR作成とCopilotへのレビュー依頼
+   - `@copilot` の指定には `gh` 2.88.0以降が必要。それ未満やCopilot code reviewが使えないリポジトリではコマンドが失敗する
+   - 失敗したら `gh pr view --json url,number` でPRが作成済みかを先に確認する
+     - 未作成なら `--reviewer @copilot` を外して作り直す
+     - 作成済みならPRはそのままにして、依頼だけが失敗した旨を報告する（重複してPRを作らない）
+   - どちらの場合もCopilotへのレビュー依頼が失敗したことを必ず報告する
+   - レビューのeffort levelはコマンドから指定できない。Balancedにするにはリポジトリの Settings > Copilot > Code review での設定が必要
+7. `gh pr comment <PR番号> --body "@codex review"` でCodexのレビューを起動
+   - リポジトリでCodexのGitHub連携が有効でない場合は無反応になる。その場合は連携が未設定である旨を報告する
+   - CodexとCopilotから返ってきたレビューは `/pr-fix` で取得・修正する
 
 ## エラーハンドリング
 - 認証エラー時は手動PR作成URLを提供

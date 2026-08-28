@@ -1,5 +1,6 @@
 ---
 description: 新規ブランチ作成からPR作成までを一連で実行する
+when_to_use: PR・プルリクエストの作成を依頼されたとき、変更をPRにまとめるとき、`gh pr create`を実行しようとしたときに使用
 argument-hint: [--from-main]
 allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(gh pr create *), Bash(gh pr view *), Bash(gh pr comment *), Bash(gh auth refresh *)
 ---

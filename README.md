@@ -43,6 +43,10 @@ A `Stop` hook (`hooks/auto-review.sh`) reviews uncommitted changes before Claude
 
 Codex reviews pull requests as well. `/pr-zero` posts an `@codex review` comment after opening the PR, and `/pr-fix` picks up the findings that `chatgpt-codex-connector` posts. This needs the repository to be configured at <https://chatgpt.com/codex/settings/code-review>; without it the comment goes unanswered.
 
+GitHub Copilot reviews pull requests too. `/pr-zero` passes `--reviewer @copilot` to `gh pr create`, so Copilot code review is requested the moment the draft PR opens, and `/pr-fix` picks up what it reports. Requesting Copilot from the CLI needs `gh` 2.88.0 or later; older versions cannot resolve `@copilot` and the command fails, so `/pr-zero` checks whether the PR was created before retrying without the flag.
+
+The review effort level cannot be passed on the command line. To get **Balanced** reviews, set it per repository in Settings > Copilot > Code review > Review effort level; an organization can hold a default that a repository setting overrides. GitHub documents that default for automatic reviews only, so if a manually requested review still comes back as Lite, pick Balanced from the Reviewers section in the PR. The effort level each run used is shown in Copilot's PR overview comment. For reviews that are always Balanced without touching the PR, enable a ruleset with "Automatically request Copilot code review" and "Review draft pull requests" instead.
+
 `AGENTS.md` holds the review rules Codex follows, both locally and on GitHub. It mirrors `CLAUDE.md`, so update both together.
 
 #### MCP Server

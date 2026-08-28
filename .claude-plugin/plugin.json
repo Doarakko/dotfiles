@@ -7,6 +7,20 @@
     "email": "2wua4nlyi@gmail.com"
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(gh pr create *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/pr-create-guard.sh\"",
+            "timeout": 10
+          }
+        ],
+        "description": "Route PR creation through the pr-zero workflow"
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",

@@ -20,18 +20,21 @@ codex CLIの`exec review`サブコマンドでコードレビューを実行し�
 
    ```bash
    # 未コミット差分（ステージ済み・未ステージ・未追跡すべてを含む）
-   codex exec --sandbox read-only review --uncommitted "追加のレビュー指示"
+   codex exec --sandbox read-only review --uncommitted
 
    # ベースブランチとの差分
    codex exec --sandbox read-only review --base master
 
    # 特定コミット
    codex exec --sandbox read-only review --commit <SHA>
+
+   # 追加のレビュー指示を渡す場合は範囲フラグを外し、プロンプトで範囲も伝える
+   codex exec --sandbox read-only review "未コミットの変更をレビューし、あわせて追加のレビュー指示"
    ```
 
    - Bashツールの`timeout`に`300000`を指定する。デフォルトの120秒では足りない
    - 進捗はstderr、最終メッセージのみstdoutに出るため、stdoutをそのまま拾う
-   - 追加指示を省略する場合はプロンプト引数ごと省略する
+   - 範囲フラグ（`--uncommitted`／`--base`／`--commit`）はプロンプト引数と併用できない。ヘルプのUsageは併用可能に見えるが実際は排他で、渡すとエラーになる
 
 2. 出力を解析する。codexは`- タイトル — パス:開始行-終了行`の行と、その下にインデントされた本文という形式で指摘を返す
 

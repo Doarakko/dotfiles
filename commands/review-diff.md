@@ -26,7 +26,7 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(codex exec *), Bash(np
 1. 上記の自動取得データを元にレビュー
 2. プロジェクト環境を分析（言語、フレームワーク）
 3. `code-reviewer` Subagentと`codex-reviewer` Subagentを1メッセージ内で同時に起動（`code-reviewer`の観点はSubagentのSkill定義に従う）
-   - `codex`が使えない環境では`codex-reviewer`がスキップを報告するので、その旨を結果に含める
+   - 未インストールや未ログインで`codex`が使えない環境では`codex-reviewer`がスキップを報告するので、その旨を結果に含める
 4. 自動チェックツール実行（ESLint、Ruff、golangci-lint等）
 5. 両レビュアーの指摘をマージし、同一箇所を指す重複指摘は1件にまとめて表示（どのレビュアー由来かを併記）
 6. 修正に入るか確認（AskUserQuestion）

@@ -6,6 +6,7 @@
       "Read",
       "Bash(cat *)",
       "Bash(codex exec *)",
+      "Bash(codex login status*)",
       "Bash(echo *)",
       "Bash(find *)",
       "Bash(gemini *)",
@@ -41,12 +42,23 @@
     "ignoreViolations": {
       "git": [".git/config"]
     },
+    "filesystem": {
+      "allowWrite": [
+        "~/.codex"
+      ],
+      "denyWrite": [
+        "~/.codex/config.toml",
+        "~/.codex/plugins"
+      ]
+    },
     "network": {
       "allowedDomains": [
         "github.com",
         "api.github.com",
         "json.schemastore.org",
-        "www.schemastore.org"
+        "www.schemastore.org",
+        "chatgpt.com",
+        "*.openai.com"
       ]
     }
   }

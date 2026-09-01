@@ -48,7 +48,11 @@
       ],
       "denyWrite": [
         "~/.codex/config.toml",
-        "~/.codex/plugins"
+        "~/.codex/plugins",
+        "~/.codex/rules",
+        "~/.codex/skills",
+        "~/.codex/vendor_imports",
+        "~/.codex/.tmp/bundled-marketplaces"
       ]
     },
     "network": {

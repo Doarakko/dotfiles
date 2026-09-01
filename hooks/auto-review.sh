@@ -76,6 +76,11 @@ CODEX_AUTH_FILE="${CODEX_HOME:-${HOME}/.codex}/auth.json"
 run_briefly() {
   if command -v timeout >/dev/null 2>&1; then
     timeout 5 "$@"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    gtimeout 5 "$@"
+  elif command -v perl >/dev/null 2>&1; then
+    # macOS には打ち切り用のコマンドが無いが、perl は標準で入っている
+    perl -e 'alarm shift; exec @ARGV' 5 "$@"
   else
     "$@"
   fi
@@ -103,12 +108,15 @@ codex_usable() {
   # 時刻が読めなければ待機は解くが、目印は残す。書かれた理由を後から読めるようにするため
   [[ "$marked_at" =~ ^[0-9]+$ ]] || return 0
 
-  # 時計のずれで未来の時刻になっていると、いつまでも待ち続けてしまう
+  # 時計のずれで未来の時刻になっていると、そのぶん待ち続けてしまう
+  # 現在時刻に置き換えるだけでは経過ゼロで待機が続くため、目印自体を打ち直す
   if (( marked_at > now )); then
-    marked_at=$now
+    touch "$COOLDOWN_FILE"
+    return 1
   fi
 
-  if (( now - marked_at >= COOLDOWN_SECONDS )); then
+  # 先頭がゼロの指定を8進数と解釈させない
+  if (( now - marked_at >= 10#$COOLDOWN_SECONDS )); then
     rm -f "$COOLDOWN_FILE"
     return 0
   fi

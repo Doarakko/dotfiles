@@ -5,7 +5,7 @@
 
 set -uo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 HOOK="${AUTO_REVIEW_HOOK:-hooks/auto-review.sh}"
 FAILURES=0
 
@@ -21,7 +21,14 @@ export CODEX_HOME="$WORK/codex-home"
 export CLAUDE_CODEX_COOLDOWN_FILE="$WORK/cooldown"
 # 既定値と違う長さにする。同じ値だと hook が変数を読めていなくてもテストが通ってしまう
 export CLAUDE_CODEX_COOLDOWN_SECONDS=1800
-export PATH="$WORK/bin:$PATH"
+# 実機に入っている codex を経路から外す
+# 残っていると未インストールのケースが本物を拾い、ログイン済みの開発機では結果が変わる
+CODEX_FREE_PATH=""
+while IFS= read -r -d ':' path_entry || [[ -n "$path_entry" ]]; do
+  [[ -z "$path_entry" || -x "${path_entry}/codex" ]] && continue
+  CODEX_FREE_PATH="${CODEX_FREE_PATH:+${CODEX_FREE_PATH}:}${path_entry}"
+done < <(printf '%s:' "$PATH")
+export PATH="$WORK/bin:$CODEX_FREE_PATH"
 unset CODEX_API_KEY CODEX_ACCESS_TOKEN OPENAI_API_KEY
 
 # 差分のあるリポジトリを用意する。レビュー対象が無いと hook は黙るため
@@ -58,11 +65,26 @@ cooldown_at() {
 # セッションIDを変え、レビュー済みの記録も作業ディレクトリに閉じ込める
 # 記録が残っていると、差分が変わっていないとみなされて hook が黙るため
 CASE=0
+# 応答しない codex を掴んでも、判定側は必ず戻ってくるようにする
+run_hook() {
+  if command -v perl >/dev/null 2>&1; then
+    perl -e 'alarm shift; exec @ARGV' 15 env TMPDIR="$WORK" bash "$HOOK"
+  else
+    TMPDIR="$WORK" bash "$HOOK"
+  fi
+}
+
 judge() {
-  local output
-  output=$(jq -n --arg s "auto-review-test-${CASE}" --arg c "${CWD_OVERRIDE:-$WORK/repo}" \
+  local output status
+  output=$(jq -n --arg s "${SESSION_OVERRIDE:-auto-review-test-${CASE}}" --arg c "${CWD_OVERRIDE:-$WORK/repo}" \
     --argjson active "${STOP_HOOK_ACTIVE:-false}" \
-    '{session_id:$s,cwd:$c,stop_hook_active:$active}' | TMPDIR="$WORK" bash "$HOOK" 2>/dev/null)
+    '{session_id:$s,cwd:$c,stop_hook_active:$active}' | run_hook 2>/dev/null)
+  status=$?
+  # 途中で落ちたのか、意図して黙っているのかを取り違えないようにする
+  if [[ "$status" -ne 0 ]]; then
+    printf 'error'
+    return
+  fi
   # 何か言うときは Stop hook の形式に沿っていること
   if [[ -n "$output" ]] &&
     ! printf '%s' "$output" | jq -e '.hookSpecificOutput.hookEventName == "Stop"' >/dev/null 2>&1; then
@@ -141,7 +163,53 @@ login_at 600
 cooldown_at 10
 export CLAUDE_CODEX_COOLDOWN_SECONDS=bad
 expect claude-only '待機時間の指定が数値でない'
+export CLAUDE_CODEX_COOLDOWN_SECONDS=0800
+expect claude-only '待機時間の先頭がゼロ'
 export CLAUDE_CODEX_COOLDOWN_SECONDS=1800
+
+# 時計のずれで目印が未来に飛んでも、待機は待機時間の長さで終わる
+future_at() {
+  touch -t "$(date -v+"$1"M +%Y%m%d%H%M 2>/dev/null || date -d "$1 minutes" +%Y%m%d%H%M)" \
+    "$CLAUDE_CODEX_COOLDOWN_FILE"
+}
+future_at 1440
+expect claude-only '目印が未来の時刻'
+marker_mtime=$(stat -c %Y "$CLAUDE_CODEX_COOLDOWN_FILE" 2>/dev/null ||
+  stat -f %m "$CLAUDE_CODEX_COOLDOWN_FILE" 2>/dev/null || echo 0)
+if (( marker_mtime > $(date +%s) + 60 )); then
+  printf 'FAIL  目印が未来の時刻のまま据え置かれている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+
+# 同じセッションで差分が変わっていなければ、二度目は依頼しない
+# レビュー済みの記録が残っていることの確認でもある
+rm -f "$CLAUDE_CODEX_COOLDOWN_FILE"
+export SESSION_OVERRIDE="auto-review-test-repeat"
+expect both '同じ差分の一度目'
+expect silent '同じ差分の二度目'
+unset SESSION_OVERRIDE
+
+# 応答しない codex に付き合わない。hook には制限時間があるため
+cat >"$WORK/bin/codex" <<'EOF'
+#!/bin/bash
+sleep 30
+EOF
+chmod +x "$WORK/bin/codex"
+expect claude-only '応答しない codex'
+
+# 途中で打ち切られた差分は、レビュー済みにしてはいけない
+jq -n --arg s "auto-review-test-killed" --arg c "$WORK/repo" \
+  '{session_id:$s,cwd:$c,stop_hook_active:false}' |
+  TMPDIR="$WORK" bash "$HOOK" >/dev/null 2>&1 &
+hook_pid=$!
+sleep 1
+kill "$hook_pid" 2>/dev/null
+wait "$hook_pid" 2>/dev/null
+if [[ -f "$WORK/claude-auto-review/auto-review-test-killed.sha" ]]; then
+  printf 'FAIL  打ち切られたのにレビュー済みとして記録されている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+install_codex 0
 
 # この hook 由来で継続中のターンでは繰り返し依頼しない
 rm -f "$CLAUDE_CODEX_COOLDOWN_FILE"

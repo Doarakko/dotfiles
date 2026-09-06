@@ -45,6 +45,7 @@ npm packages land under the node version asdf selects, so re-run `aii` after swi
 | `/test-create` | Generate tests for changed files |
 | `/commit` | Commit and push — user-invoked only |
 | `/decision-save` | Write the session's technical decisions to a file |
+| `/plan-view` | Publish a plan file as an HTML page you can open in a browser |
 
 Defined in `commands/`.
 
@@ -61,6 +62,7 @@ Defined in `commands/`.
 | `dependabot-setting` | Generate `.github/dependabot.yml` |
 | `project-setup` | Audit dependency automation and CI/CD on an unfamiliar project |
 | `review-followup` | Shared post-review confirmation flow — invoked by the review commands, not by you |
+| `report-artifact` | Publish a review result or a plan as an HTML page on claude.ai |
 
 Defined in `skills/<name>/SKILL.md`.
 
@@ -82,7 +84,7 @@ Defined in `agents/`.
 | `PostToolUse` | Runs `make lint` after edits when the Makefile has that target |
 | `Stop` | Reviews uncommitted changes before the turn ends (`hooks/auto-review.sh`) |
 
-Wired in `.claude-plugin/plugin.json`. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
+Wired in `.claude-plugin/plugin.json`. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. The same workflow runs `scripts/validate-definitions.sh`, which checks every command, skill, and agent for a closed frontmatter block, for permission specifiers Claude Code accepts but never consults (`Write(path)`, `Glob(path)`, and friends — use `Edit(path)`), and for `doarakko-config:` references that point at nothing. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
 
 ## External setup
 
@@ -92,6 +94,13 @@ None of this can be inferred from the code.
 - **codex under the Bash sandbox** — `sandbox.filesystem.allowWrite` must include `~/.codex` and `sandbox.network.allowedDomains` must include `chatgpt.com` and `*.openai.com`. Without the write grant codex dies at startup with `failed to initialize in-process app-server client: Operation not permitted`, before it ever checks credentials. `.claude/settings.json` here carries both, but it is this repository's own project settings and is not distributed with the plugin.
 - **gh** — 2.88.0 or newer to request `@copilot`, 2.99.0 or newer for `--attach` (E2E media on PRs). `--attach` exists only on `gh pr create`, not on `gh pr edit` or `gh pr comment`, so media cannot be added after the PR opens, and it cannot be combined with `--dry-run`.
 - **Copilot review effort** — cannot be passed from the CLI. Set it per repository under Settings > Copilot > Code review > Review effort level, or enable a ruleset with "Automatically request Copilot code review".
+- **Artifacts** — `/pr-review`, `/review-diff`, and `/plan-view` publish their output as an HTML page on claude.ai through the built-in `Artifact` tool.
+
+  Publishing needs a Pro, Max, Team, or Enterprise plan, a session signed in with `/login`, and the Anthropic API as the model provider. Bedrock, Vertex, and Foundry sessions cannot publish; neither can an organization with CMEK, HIPAA, or Zero Data Retention enabled; and on Enterprise an Owner has to enable artifacts for the organization. Where publishing is unavailable the commands keep the local HTML file under `/tmp/claude/report` and print the path instead.
+
+  A published page is stored on Anthropic infrastructure, so review pages carry your diff — keep secrets out of them. The page is invisible to other members until you share it from its header, but not invisible to your organization: on Team and Enterprise, Owners can list and read artifact content through the Compliance API, and every publish, share, and delete lands in the org audit log as a `claude_artifact_*` event. The commands deliberately leave `Artifact` out of their `allowed-tools`, so a page asks before it is first published. That prompt is the only one you get: once you approve a page, later republishes of it go through without asking, and in auto mode a classifier approves even the first publish.
+
+  Set `CLAUDE_CODE_ARTIFACT_AUTO_OPEN=0` to stop the browser opening on publish, `"enableArtifact": false` or `CLAUDE_CODE_DISABLE_ARTIFACT=1` to turn the whole thing off, or put `Artifact` in `permissions.deny`.
 - **E2E in other repositories** — needs `Bash(playwright-cli *)` and `Bash(curl -s -o /dev/null *)` allowed there. `.claude/settings.json` here is this repository's own project settings and is not distributed with the plugin.
 
 ## Conventions

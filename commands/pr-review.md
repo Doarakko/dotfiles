@@ -1,7 +1,7 @@
 ---
 description: PRを詳細にレビューし、改善提案を行う
 argument-hint: <PR番号またはURL>
-allowed-tools: Skill, Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api *), Bash(gh issue view *), Read, Grep, Glob, WebFetch
+allowed-tools: Skill, Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api *), Bash(gh issue view *), Bash(git rev-parse *), Bash(mkdir *), Read, Edit(//tmp/claude/report/**), Edit(//private/tmp/claude/report/**), Grep, Glob, WebFetch
 ---
 
 # PRレビューコマンド
@@ -23,8 +23,9 @@ allowed-tools: Skill, Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks 
 1. 上記の自動取得データを元にレビュー
 2. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）
 3. レビュー結果を統合して表示
-4. `doarakko-config:review-followup` スキルを起動し、その手順に従って修正に入るかを確認する
-5. 修正実行後、ボットコメントに返信
+4. `doarakko-config:report-artifact` スキルを種別`pr-review`で起動し、その手順に従ってHTMLページを公開する
+5. `doarakko-config:review-followup` スキルを起動し、その手順に従って修正に入るかを確認する
+6. 修正実行後、同じファイルパスでHTMLページを再公開してから、ボットコメントに返信
 
 ## Subagent活用
 `code-reviewer` Subagentに登録されたSkillの全観点で並列実行。

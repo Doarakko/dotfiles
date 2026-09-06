@@ -345,7 +345,7 @@ def main():
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": (
-                "PRはドラフトで作成します。doarakko-config:pr-create スキルを起動し、"
+                "PRはドラフトで作成します。doarakko-config:pr-create コマンドを起動し、"
                 "その手順に従って作成し直してください。"
             ),
         })
@@ -371,7 +371,7 @@ def main():
     emit({
         "hookEventName": "PreToolUse",
         "additionalContext": (
-            "PRを作成しようとしています。doarakko-config:pr-create スキルの手順に"
+            "PRを作成しようとしています。doarakko-config:pr-create コマンドの手順に"
             "従ってください。まだ起動していなければ先に起動すること"
             "（起動済みならそのまま進めてよい）。"
         ),

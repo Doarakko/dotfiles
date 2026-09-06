@@ -277,7 +277,9 @@ aiu() {
 
   # マーケットプレイス未登録だとinstallが失敗するため先に登録する
   cc-marketplace-add || failed+=("marketplace")
-  claude plugin marketplace update
+  # 更新が落ちるとプラグインは古いカタログのまま入る。後段がたまたま成功しても
+  # 「完了」と報告しないよう、ここでも失敗を数える
+  claude plugin marketplace update || failed+=("marketplace-update")
 
   # 導入は未導入を埋めるだけの前処理として先に置く。導入済みなら何もせず成功するため、
   # 後段に回すと更新が転んでも成功が返り、古いまま「完了」と報告してしまう

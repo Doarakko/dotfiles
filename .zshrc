@@ -186,6 +186,7 @@ CLAUDE_PLUGINS=(
 # Homebrewから入れるAI開発ツール（導入と更新で共有）
 AI_BREW_CASKS=(
   claude-code
+  codex
 )
 
 # PRの作成・CI確認に要るため、AIワークフローの一部として一緒に更新する
@@ -196,7 +197,6 @@ AI_BREW_FORMULAE=(
 # npmから入れるAI開発ツール（導入と更新で共有）
 # asdfが管理するnode配下へ入るので、nodeを切り替えたら入れ直しが要る
 AI_NPM_PACKAGES=(
-  @openai/codex
   @google/gemini-cli
   @playwright/cli
 )

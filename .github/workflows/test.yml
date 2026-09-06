@@ -1,0 +1,29 @@
+name: test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # テストは git rev-parse / git branch --show-current を読む。
+      # checkout の既定は detached HEAD なので、ブランチ名を持たせる
+      - name: Ensure a named branch
+        run: git checkout -B ci-test
+
+      - name: Validate plugin manifests
+        run: |
+          jq empty .claude-plugin/plugin.json
+          jq empty .claude-plugin/marketplace.json
+          jq empty .claude/settings.json
+
+      - name: hooks/pr-create-guard.test.sh
+        run: bash hooks/pr-create-guard.test.sh
+
+      - name: hooks/auto-review.test.sh
+        run: bash hooks/auto-review.test.sh

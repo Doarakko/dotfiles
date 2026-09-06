@@ -163,7 +163,13 @@ def pr_create_arguments(tokens):
         arguments = []
         depth = 0
         for token in tokens[i + 3 :]:
-            if is_separator(token):
+            # 記号は連続すると1トークンになる。`;(` のように区切りと括弧が
+            # 混ざった形を見逃すと、後続コマンドの語をこの呼び出しの引数として
+            # 読み続けてしまい、そこに現れたフラグで判定が覆る
+            if is_separator(token) or (
+                all(char in PUNCTUATION for char in token)
+                and any(char in SEPARATOR_CHARS for char in token)
+            ):
                 break
             if is_only(token, "("):
                 depth += len(token)
@@ -339,7 +345,7 @@ def main():
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": (
-                "PRはドラフトで作成します。doarakko-config:pr-zero スキルを起動し、"
+                "PRはドラフトで作成します。doarakko-config:pr-create スキルを起動し、"
                 "その手順に従って作成し直してください。"
             ),
         })
@@ -365,7 +371,7 @@ def main():
     emit({
         "hookEventName": "PreToolUse",
         "additionalContext": (
-            "PRを作成しようとしています。doarakko-config:pr-zero スキルの手順に"
+            "PRを作成しようとしています。doarakko-config:pr-create スキルの手順に"
             "従ってください。まだ起動していなければ先に起動すること"
             "（起動済みならそのまま進めてよい）。"
         ),

@@ -71,7 +71,7 @@ expect deny 'gh pr create --draft=FALSE'
 expect deny 'gh pr create -d=false'
 expect deny 'gh pr create -Fdesc'
 
-# ドラフト指定があれば通し、pr-zero の手順を添える
+# ドラフト指定があれば通し、pr-create の手順を添える
 expect context 'gh pr create --draft'
 expect context 'gh pr create -d'
 expect context 'gh pr create -dt "x"'
@@ -144,6 +144,13 @@ EOF
 # 後続コマンドのフラグを拾わない
 expect deny 'gh pr create --fill && docker run -d nginx'
 expect context 'git push -u origin foo && gh pr create -d'
+
+# 区切りとサブシェルが1トークンに繋がっても、後続の語を引数として読まない
+expect deny 'gh pr create --fill;(docker run -d nginx)'
+expect deny 'gh pr create --fill;(gh pr view -w)'
+expect deny 'gh pr create --fill;(echo --web)'
+expect deny 'gh pr create --fill;(man --help)'
+expect context 'gh pr create --draft;(echo x)'
 
 # 実行されるのは最初の呼び出し。後続の出現に引きずられない
 expect deny 'gh pr create --fill; echo gh pr create --draft'

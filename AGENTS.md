@@ -1,8 +1,8 @@
 # AGENTS.md
 
-Codex向けのリポジトリ規約。ローカルの`codex exec`とGitHub上のコードレビューの双方がこのファイルを読む。
+このリポジトリの規約。ローカルの`codex exec`とGitHub上のコードレビューが直接読み、Claude Codeは`CLAUDE.md`のインポート経由で読む。
 
-Claude Codeは`CLAUDE.md`を読む。両者で規約がずれないよう、片方だけを更新しないこと。
+規約はこのファイルにだけ書く。`CLAUDE.md`へ規約を直接書き足さないこと。
 
 ## 前提
 
@@ -48,3 +48,13 @@ Claude Codeの設定（コマンド・スキル・エージェント・hook）�
 
 - リポジトリ内のファイルだけを変更しているか。ホームディレクトリ配下を直接書き換えていないか
 - 実体はプラグインキャッシュへコピーされるため、リポジトリ内のパスを絶対パスで参照していないか。`${CLAUDE_PLUGIN_ROOT}`を使う
+- hookからスクリプトを起動するとき、`command`へパスを文字列連結していないか。`command`と`args`に分ける exec 形式ならシェルを経由しないため、パスに空白やクォートが混ざっても壊れない
+
+### サンドボックス設定
+
+`.claude/settings.json`はJSONでコメントを持てないため、消してはいけない理由をここに置く。
+
+- `sandbox.filesystem.allowWrite`の`~/.codex`と、`sandbox.network.allowedDomains`の`chatgpt.com`・`*.openai.com`を外していないか。codexはサンドボックス下でsqlite状態とログを書き、ChatGPTと通信する。書き込み許可が無いと認証確認より前に起動時点で落ちる
+- その書き込み許可を絞る`denyWrite`の6パスを外していないか。`config.toml`の`notify`と`mcp_servers.<name>.command`、プラグインの実行ファイル、コマンドを事前承認する execpolicy の`.rules`、skills、bundled marketplace のソース。いずれも**codexが次回サンドボックス外で何を実行するか**を決める。サンドボックス下のコマンドがこれらを書き換えられると、自分自身に非サンドボックス実行を与えられる
+- 残る`vendor_imports`は、外部から取得した curated skill のカタログキャッシュ。**改ざんの影響は未検証**だが、書き込みを許す理由も無いので同じく閉じている
+- この deny はトレードオフで、無条件に安全な締め付けではない。codexは実行時に`config.toml`を自身で書き換える（モデル移行の通知、プロジェクトごとの`trust_level`）。またこの6つを全て deny した状態で確認できているのはセッションバナーまでで、**レビュー経路全体は未検証**

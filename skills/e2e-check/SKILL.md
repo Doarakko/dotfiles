@@ -1,7 +1,7 @@
 ---
 name: e2e-check
 description: Playwright CLIを使ってE2Eで動作確認を行うときに使用
-allowed-tools: Read, Grep, Glob, Bash(which *), Bash(playwright-cli *), Bash(curl -s -o /dev/null *), Bash(mkdir *), Bash(cat *), Bash(ls *), Bash(find *), Bash(echo *), Bash(printf *), Bash(basename *), Bash(tr *), Bash(test *), Bash(git branch *), Bash(git rev-parse *)
+allowed-tools: Read, Grep, Glob, Bash(which *), Bash(playwright-cli *), Bash(curl -s -o /dev/null *), Bash(mkdir *), Bash(cat *), Bash(ls *), Bash(find *), Bash(file *), Bash(echo *), Bash(printf *), Bash(basename *), Bash(tr *), Bash(test *), Bash(git branch *), Bash(git rev-parse *)
 ---
 
 # E2E動作確認（Playwright CLI）
@@ -104,9 +104,21 @@ playwright-cli snapshot
 スクリーンショット:
 ```bash
 playwright-cli screenshot --filename "<成果物ディレクトリ>/01-login-form-empty.png"
-playwright-cli screenshot --full-page --filename "<成果物ディレクトリ>/02-dashboard.png"
 ```
-画面が切り替わる節目で撮る。レイアウトの変更なら `--full-page` を使う。修正の前後を見せたいときは変更前と変更後の両方を撮る。
+画面が切り替わる節目で撮る。修正の前後を見せたいときは変更前と変更後の両方を撮る。
+
+**既定はビューポート内。`--full-page` は使わない。**
+
+PR本文のカラム幅は約830pxで、撮影幅がそれ以上なら原寸で並ぶ。`--full-page` は縦がページの長さそのものになるので、4000px のページを撮れば本文に4000pxのスクロールが足される。1枚で本文が読めなくなる。
+
+全体の並び順を見せたいときも `--full-page` ではなく、**`resize` で縦を伸ばしてから撮る**。高さが自分で決めた値に収まる。
+
+```bash
+playwright-cli resize 390 1400
+playwright-cli screenshot --filename "<成果物ディレクトリ>/02-form-and-result.png"
+```
+
+それでも入り切らず `--full-page` が要ると判断したときは、本文がその高さぶん伸びることを承知のうえで**その1枚に絞る**。
 
 動画:
 ```bash
@@ -121,11 +133,21 @@ playwright-cli video-stop --filename "<成果物ディレクトリ>/10-invite-fl
 - 撮影サイズは録画開始時のビューポートで決まる。CLIから指定する手段が無いため、容量を落としたいときは `video-start` の前に `resize` する
 - `video-start` は開いているブラウザにそのまま効く。開き直す必要はない
 
-撮り終えたら上限を超えたものが無いか確認する:
+撮り終えたら容量と寸法の両方を確認する。**容量だけ見ても足りない。** 縦に長い画像は数百KBで上限を素通りするが、PR本文では上限を超えたのと同じくらい読めなくなる。
+
+容量:
 ```bash
 find "<成果物ディレクトリ>" -maxdepth 1 -type f ! -size -10000k
 ```
 GitHubの添付上限は画像10MB、動画は無料プランで10MB。プランを判別する手段が無いため、常に10MBで判定する。超えたものは削除し、動画なら導線を分割して撮り直すか、同じ導線の節目のスクリーンショットで代替する。
+
+寸法:
+```bash
+find "<成果物ディレクトリ>" -maxdepth 1 -name '*.png' -exec file {} \;
+```
+`file` は PNG に対して `PNG image data, 780 x 1688` の形で幅と高さを出す（`sips` と違い macOS 以外でも動く）。
+
+**縦が2000pxを超えていたら撮り直す。** ビューポート2枚ぶんが目安。`resize` で高さを決めて撮り直すか、節目を分けて枚数を減らす。撮り直さずに残すなら、なぜその高さが要るのかを確認結果のサマリーに書く。
 
 ### 7. 確認結果のサマリー
 - 確認したシナリオと結果を一覧で表示する

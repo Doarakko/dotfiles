@@ -62,10 +62,30 @@ allowed-tools: Skill, Read, Write, Bash(git add *), Bash(git commit *), Bash(git
    - ファイル名から先頭の `NN-` と拡張子を除き、ハイフンを空白に置き換えたものを代替テキストにする
    - 動作確認セクションを設け、各ファイルを `![代替テキスト](<絶対パス>)` の形で並べる
    - `gh` はこの参照をアップロード先のURLへ置換する。本文に書いた位置にそのまま入る
+   - **インラインに置くのは、変更が分かる2枚まで。残りは `<details>` に畳む。**
+     全部を並べると本文が数千〜数万pxのスクロールになり、肝心の説明が読まれなくなる
+   - `<details>` の中のmarkdownをGitHubに解釈させるには、`<summary>` の後に空行が要る:
+
+     ```md
+     ## 動作確認
+
+     ![key screen](<絶対パス>)
+
+     <details>
+     <summary>ほかの画面（N枚）</summary>
+
+     ![other screen](<絶対パス>)
+
+     </details>
+     ```
+
+   - `gh` の置換は本文へのテキスト置換なので、`<details>` の中に書いた参照もそのまま書き換わる
+   - 前後比較は2列のテーブルに入れて横に並べる。縦の長さが半分になる
 8. `gh pr create --draft --reviewer @copilot --title <タイトル> --body-file <本文ファイル>` でドラフトPR作成とCopilotへのレビュー依頼
    - 撮影した場合は、選んだファイルごとに `--attach '<絶対パス>'` を並べて渡す。本文に参照を書いてあればその位置がアップロード先のURLに書き換わり、本文に書いた代替テキストがそのまま使われるため `#代替テキスト` は不要
    - 動画はプレイヤーとして表示され、代替テキストを持たない
    - 添付は1コマンドあたり50ファイルまで。超えるなら主要な導線に絞る
+   - **ただし枚数は50ではなく本文の読みやすさで決める。目安は6枚。** 上限に収まっていても、読めない本文はレビューされない
    - `--attach` は `gh` 2.99.0以降の `gh pr create` にしかない。`gh pr edit` や `gh pr comment` には無いため、PRを作ったあとから添付を足すことはできない。`gh --version` で確認し、2.99.0未満なら `--attach` と本文の画像参照を外して作成し、添付できなかった旨を必ず報告する
    - 一部の添付だけが失敗した場合、成功した分を伴ってPRは作成される。終了コードは非0になるが標準出力にPRのURLが出るので、**URLが出ていればPRを作り直さない**。添付の一部が失敗した旨を報告する
    - `@copilot` の指定には `gh` 2.88.0以降が必要。それ未満やCopilot code reviewが使えないリポジトリではコマンドが失敗する
@@ -74,7 +94,18 @@ allowed-tools: Skill, Read, Write, Bash(git add *), Bash(git commit *), Bash(git
      - 作成済みならPRはそのままにして、依頼や添付だけが失敗した旨を報告する（重複してPRを作らない）
    - どちらの場合もCopilotへのレビュー依頼や添付が失敗したことを必ず報告する
    - レビューのeffort levelはコマンドから指定できない。Balancedにするにはリポジトリの Settings > Copilot > Code review での設定が必要
-9. `gh pr comment <PR番号> --body "@codex review"` でCodexのレビューを起動
+9. 撮影した場合は、作成したPRの本文で画像の表示幅を指定する
+   - `--attach` が置換するのは markdown 参照 `![alt](path)` だけで、`<img>` は見ない。
+     markdown には幅を指定する構文が無いため、**幅を効かせるにはPRを作ったあとに書き換えるしかない**
+   - 手順:
+     1. `gh pr view <PR番号> --json body --jq '.body' > <本文ファイル>` で置換済みの本文を読み戻す
+     2. `![代替テキスト](https://github.com/user-attachments/...)` を
+        `<img src="https://github.com/user-attachments/..." width="..." alt="代替テキスト">` に書き換える
+        - モバイル幅の撮影（画像の幅が700px超）は `width="300"` が目安
+        - デスクトップ幅の撮影は `width="600"` が目安
+     3. `gh pr edit <PR番号> --body-file <本文ファイル>` で反映する
+   - 動画はプレイヤーとして表示されるので、この書き換えの対象外
+10. `gh pr comment <PR番号> --body "@codex review"` でCodexのレビューを起動
    - リポジトリでCodexのGitHub連携が有効でない場合は無反応になる。その場合は連携が未設定である旨を報告する
    - CodexとCopilotから返ってきたレビューは `/pr-fix` で取得・修正する
 

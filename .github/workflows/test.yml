@@ -5,6 +5,15 @@ on:
     branches: [master]
   pull_request:
 
+# 読み取りしかしないので、既定の広い権限を絞る
+permissions:
+  contents: read
+
+# 同じブランチへ続けてpushしたとき、古い実行を捨てる
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   hooks:
     runs-on: ubuntu-latest

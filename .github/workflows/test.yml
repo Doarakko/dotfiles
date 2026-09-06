@@ -22,6 +22,9 @@ jobs:
           jq empty .claude-plugin/marketplace.json
           jq empty .claude/settings.json
 
+      - name: scripts/validate-definitions.sh
+        run: bash scripts/validate-definitions.sh
+
       - name: hooks/pr-create-guard.test.sh
         run: bash hooks/pr-create-guard.test.sh
 

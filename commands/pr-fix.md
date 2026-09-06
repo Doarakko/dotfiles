@@ -1,7 +1,7 @@
 ---
 description: PRのレビューコメントとCIエラーを自動修正する
 argument-hint: [PR番号]
-allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api repos/*/pulls/*/comments*), Bash(gh api repos/*/pulls/*/reviews*), Bash(gh repo view *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Read, Write, Edit, Grep, Glob, WebFetch
+allowed-tools: Skill, Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api repos/*/pulls/*/comments*), Bash(gh api repos/*/pulls/*/reviews*), Bash(gh repo view *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Read, Write, Edit, Grep, Glob, WebFetch
 ---
 
 # PR自動修正コマンド
@@ -41,31 +41,13 @@ PR番号省略時は現在のブランチのPRを使用。
    b. `git merge --no-commit --no-ff origin/master` でコンフリクトを確認
    c. コンフリクトがなければ `git merge --abort`
    d. コンフリクトがあれば解消してコミット・プッシュ
-3. ユーザーに修正方針を確認（AskUserQuestion）
+3. `doarakko-config:review-followup` スキルを起動し、その手順に従って修正方針を確認する。このコマンドは修正まで行うため、スキル側の手順1では「修正しない」を出さない
 4. 各レビューコメント修正について:
    a. 修正を適用
    b. コミット・プッシュ
    c. ボットコメントにのみ返信（人間のコメントには絶対に返信しない。判別方法は「自動返信ルール」参照）
 5. CIエラー修正を適用
 6. コミット・プッシュ
-7. CLAUDE.md更新が必要か確認
-
-## ユーザー確認（AskUserQuestion）
-
-### 全体の修正方針
-検出された修正項目について確認:
-- **AIに判断を任せる（推奨）**: セキュリティ・バグ・型エラー・パフォーマンス問題は必ず修正、それ以外は内容を読んで判断
-- **個別に選択する**: 各項目について個別に確認
-
-### 個別選択の場合
-各項目について確認:
-- **AIに判断を任せる**: この項目についてAIが対応要否を判断
-- **修正する**: この項目を修正対象に追加
-- **修正しない**: この項目をスキップ
-
-### CLAUDE.md更新確認
-修正後、プロジェクト全体に適用すべきルールがあれば確認:
-- セキュリティパターン、コーディング規約、繰り返し発生するエラーパターン等
 
 ## 自動返信ルール
 

@@ -2,16 +2,16 @@
 description: 新規ブランチ作成からPR作成までを一連で実行する
 when_to_use: PR・プルリクエストの作成を依頼されたとき、変更をPRにまとめるとき、`gh pr create`を実行しようとしたときに使用
 argument-hint: [--from-main]
-allowed-tools: Skill, Read, Write, Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git rev-parse *), Bash(gh pr create *), Bash(gh pr view *), Bash(gh pr comment *), Bash(gh auth refresh *), Bash(gh --version*), Bash(cat *), Bash(ls *), Bash(find *), Bash(mkdir *), Bash(echo *), Bash(printf *), Bash(basename *), Bash(tr *), Bash(test *), Bash(curl -s -o /dev/null *), Bash(playwright-cli *)
+allowed-tools: Skill, Read, Write, Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git rev-parse *), Bash(gh pr create *), Bash(gh pr edit *), Bash(gh pr view *), Bash(gh pr comment *), Bash(gh auth refresh *), Bash(gh --version*), Bash(cat *), Bash(ls *), Bash(find *), Bash(mkdir *), Bash(echo *), Bash(printf *), Bash(basename *), Bash(tr *), Bash(test *), Bash(curl -s -o /dev/null *), Bash(playwright-cli *)
 ---
 
-# PRゼロからワークフロー
+# PR作成ワークフロー
 
 新規ブランチ作成からPR作成までを一連で実行する。
 
 ## 使用方法
 ```
-/pr-zero [--from-main]
+/pr-create [--from-main]
 ```
 - `--from-main`: メインブランチから新規ブランチ作成
 - 省略時: 現在のブランチから新規ブランチ作成

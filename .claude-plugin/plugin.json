@@ -1,7 +1,7 @@
 {
   "name": "doarakko-config",
   "description": "Productivity commands for branch management, commit splitting, PR workflows, code review, CI/CD automation, and test creation",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Doarakko",
     "email": "2wua4nlyi@gmail.com"
@@ -14,11 +14,12 @@
           {
             "type": "command",
             "if": "Bash(gh pr create *)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/pr-create-guard.sh\"",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/pr-create-guard.sh"],
             "timeout": 10
           }
         ],
-        "description": "Route PR creation through the pr-zero workflow"
+        "description": "Route PR creation through the pr-create workflow"
       }
     ],
     "PostToolUse": [
@@ -38,31 +39,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/task-completion-notify.sh"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-review.sh",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/auto-review.sh"],
             "timeout": 30,
             "statusMessage": "未レビューの差分を確認中..."
           }
         ],
         "description": "Review uncommitted changes before finishing"
-      }
-    ],
-    "Notification": [
-      {
-        "matcher": "idle_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/idle-notify.sh"
-          }
-        ]
       }
     ]
   }

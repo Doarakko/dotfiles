@@ -158,23 +158,22 @@ gco() {
 # Claude Code
 export EDITOR="code-insiders"
 
+# 命名: 直接叩く操作のうち、ccで始まるものはClaude Codeだけを対象にし、
+# aiで始まるものはAI開発ツールチェーン全体を対象にする。補助関数はこの区別の外
 alias cc='claude'
 alias ccw='claude --worktree'
 alias ccu='brew upgrade claude-code'
 
-# 登録するマーケットプレイス（ccpi/ccpuで共有）
+# 登録するマーケットプレイス（導入と更新で共有）
 CLAUDE_MARKETPLACES=(
   ~/src/dotfiles
-  hashicorp/agent-skills
   anthropics/skills
   anthropics/claude-plugins-official
 )
 
-# インストールするプラグイン（ccpi/ccpuで共有）
+# インストールするプラグイン（導入と更新で共有）
 CLAUDE_PLUGINS=(
   doarakko-config@doarakko-config
-  terraform@hashicorp
-  packer@hashicorp
   example-skills@anthropic-agent-skills
   context7@claude-plugins-official
   claude-md-management@claude-plugins-official
@@ -184,6 +183,34 @@ CLAUDE_PLUGINS=(
   feature-dev@claude-plugins-official
 )
 
+# Homebrewから入れるAI開発ツール（導入と更新で共有）
+AI_BREW_CASKS=(
+  claude-code
+  codex
+)
+
+# PRの作成・CI確認に要るため、AIワークフローの一部として一緒に更新する
+AI_BREW_FORMULAE=(
+  gh
+)
+
+# npmから入れるAI開発ツール（導入と更新で共有）
+# asdfが管理するnode配下へ入るので、nodeを切り替えたら入れ直しが要る
+AI_NPM_PACKAGES=(
+  @google/gemini-cli
+  @playwright/cli
+)
+
+# 失敗した対象をまとめて報告する。1件転んでも残りを進めたいので終了コードは最後に決める
+ai-tools-report() {
+  if (( $# == 0 )); then
+    print -r -- "すべて完了した"
+    return 0
+  fi
+  print -r -- "失敗した対象: $*"
+  return 1
+}
+
 # マーケットプレイスを登録する（登録済みの場合は何もしない）
 cc-marketplace-add() {
   local marketplace
@@ -192,25 +219,75 @@ cc-marketplace-add() {
   done
 }
 
-# プラグインをインストールする
-ccpi() {
-  cc-marketplace-add || return 1
+# AI開発ツールとClaude Codeプラグインをまとめて導入する
+aii() {
+  local failed=()
+  local cask formula pkg plugin
 
-  local plugin
-  for plugin in "${CLAUDE_PLUGINS[@]}"; do
-    claude plugin install "$plugin"
+  for cask in "${AI_BREW_CASKS[@]}"; do
+    brew list --cask "$cask" >/dev/null 2>&1 && continue
+    brew install --cask "$cask" || failed+=("$cask")
   done
+
+  for formula in "${AI_BREW_FORMULAE[@]}"; do
+    brew list --formula "$formula" >/dev/null 2>&1 && continue
+    brew install "$formula" || failed+=("$formula")
+  done
+
+  # 導入済みは飛ばす。ここで最新化まで走ると更新側と区別が付かなくなる
+  for pkg in "${AI_NPM_PACKAGES[@]}"; do
+    npm ls -g --depth=0 "$pkg" >/dev/null 2>&1 && continue
+    npm install -g "${pkg}@latest" || failed+=("$pkg")
+  done
+
+  cc-marketplace-add || failed+=("marketplace")
+
+  for plugin in "${CLAUDE_PLUGINS[@]}"; do
+    claude plugin install "$plugin" || failed+=("$plugin")
+  done
+
+  ai-tools-report "${failed[@]}"
 }
 
-# プラグインを再インストールして最新化する
-ccpu() {
-  # マーケットプレイス未登録だとinstallが失敗するため先に登録する
-  cc-marketplace-add || return 1
-  claude plugin marketplace update
+# AI開発ツールとClaude Codeプラグインをまとめて最新化する
+aiu() {
+  local failed=()
+  local cask formula pkg plugin
 
-  local plugin
-  for plugin in "${CLAUDE_PLUGINS[@]}"; do
-    claude plugin uninstall "$plugin"
-    claude plugin install "$plugin"
+  # 未導入のものへupgradeを投げると失敗するため、その場合は導入に回す
+  for cask in "${AI_BREW_CASKS[@]}"; do
+    if brew list --cask "$cask" >/dev/null 2>&1; then
+      brew upgrade --cask "$cask" || failed+=("$cask")
+    else
+      brew install --cask "$cask" || failed+=("$cask")
+    fi
   done
+
+  for formula in "${AI_BREW_FORMULAE[@]}"; do
+    if brew list --formula "$formula" >/dev/null 2>&1; then
+      brew upgrade "$formula" || failed+=("$formula")
+    else
+      brew install "$formula" || failed+=("$formula")
+    fi
+  done
+
+  for pkg in "${AI_NPM_PACKAGES[@]}"; do
+    npm install -g "${pkg}@latest" || failed+=("$pkg")
+  done
+
+  # マーケットプレイス未登録だとinstallが失敗するため先に登録する
+  cc-marketplace-add || failed+=("marketplace")
+  # 更新が落ちるとプラグインは古いカタログのまま入る。後段がたまたま成功しても
+  # 「完了」と報告しないよう、ここでも失敗を数える
+  claude plugin marketplace update || failed+=("marketplace-update")
+
+  # 導入は未導入を埋めるだけの前処理として先に置く。導入済みなら何もせず成功するため、
+  # 後段に回すと更新が転んでも成功が返り、古いまま「完了」と報告してしまう
+  # 成否は更新の戻り値だけで決める
+  for plugin in "${CLAUDE_PLUGINS[@]}"; do
+    claude plugin install "$plugin" >/dev/null 2>&1
+    claude plugin update "$plugin" || failed+=("$plugin")
+  done
+
+  ai-tools-report "${failed[@]}"
 }

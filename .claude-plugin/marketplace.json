@@ -1,9 +1,7 @@
 {
   "name": "doarakko-config",
-  "metadata": {
-    "description": "Productivity commands collection for Claude Code",
-    "version": "1.0.0"
-  },
+  "description": "Productivity commands collection for Claude Code",
+  "version": "1.1.0",
   "owner": {
     "name": "Doarakko",
     "email": "2wua4nlyi@gmail.com"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Claude Code PR作成ガード Hook
-# pr-zero の手順を通さずに PR が作られるのを防ぐ
+# pr-create の手順を通さずに PR が作られるのを防ぐ
 
 set -uo pipefail
 

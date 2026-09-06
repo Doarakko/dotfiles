@@ -8,3 +8,4 @@ history.jsonl
 .claude/file-history
 .claude/debug
 .claude/plans
+.claude/settings.local.json

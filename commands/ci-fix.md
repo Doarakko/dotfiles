@@ -1,6 +1,6 @@
 ---
 description: 現在のブランチのPRでCI失敗を自動修正する
-allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Read, Write, Edit, Grep, Glob
+allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Bash(pip-audit *), Read, Write, Edit, Grep, Glob
 ---
 
 # CI修正コマンド
@@ -25,13 +25,13 @@ allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(
    c. コンフリクトがなければ `git merge --abort`
    d. コンフリクトがあれば解消してコミット
 3. 失敗タイプに応じて修正:
-   - lint: 自動修正ツール実行
+   - lint: `npm run lint -- --fix` / `ruff check --fix` / `golangci-lint run --fix`
    - type: 型エラーを分析・修正
-   - test: テスト実行して失敗箇所を修正
-   - build: 依存関係更新
-   - security: セキュリティ修正
+   - test: テスト実行して失敗箇所を特定・修正
+   - build: 依存関係更新とビルド
+   - security: `npm audit fix` / `pip-audit --fix`
 4. 修正内容を表示（コミットしない）
 
 ## 制約
 - ignoreコメントは極力避け、実コードを修正
-- 修正後はローカルで検証してから `/commit` でコミット
+- 修正後はローカルで検証するところまで。コミットはユーザーが `/commit` を実行して行う

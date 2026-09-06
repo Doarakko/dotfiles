@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # コマンド・スキル・エージェントの定義を検証する。
-# CIとローカルの両方から実行する。依存はbashとgrep/sedのみ。
+# CIとローカルの両方から実行する。bashと標準的なコマンド以外には依存しない。
 set -uo pipefail
 
 cd "$(dirname "$0")/.." || exit 1

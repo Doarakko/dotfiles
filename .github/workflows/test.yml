@@ -22,11 +22,16 @@ jobs:
           jq empty .claude-plugin/marketplace.json
           jq empty .claude/settings.json
 
-      - name: scripts/validate-definitions.sh
-        run: bash scripts/validate-definitions.sh
-
+      # 検査は互いに独立しているので、1つ落ちても残りを走らせる。
+      # 直列に止めると、最初の失敗が後続の回帰を隠す
       - name: hooks/pr-create-guard.test.sh
+        if: ${{ !cancelled() }}
         run: bash hooks/pr-create-guard.test.sh
 
       - name: hooks/auto-review.test.sh
+        if: ${{ !cancelled() }}
         run: bash hooks/auto-review.test.sh
+
+      - name: scripts/validate-definitions.sh
+        if: ${{ !cancelled() }}
+        run: bash scripts/validate-definitions.sh

@@ -69,6 +69,9 @@ groups:
     applies-to: version-updates
     patterns:
       - "*"
+    exclude-patterns:
+      - "eslint*"
+      - "prettier*"
     update-types:
       - "minor"
       - "patch"
@@ -92,9 +95,29 @@ groups:
 
 - グループ名に使えるのは英字・`|`・`_`・`-` で、先頭と末尾は英字。数字は使えない
 - 開発用パッケージかどうかで分けない。`dependency-type` の `development` / `production` を使うとPRが割れ、まとめる意図と逆になる
+- Lint系だけは `exclude-patterns` でグループから外す。下の「Lint系の除外」を見る
 - メジャー更新はグループへ入れず、個別PRのままにする。破壊的変更を単独でレビューするため
 - `applies-to: version-updates` を明示する。省略時の既定と同じだが、セキュリティ更新がまとまらないことを設定上わかるようにする
 - `docker` はタグがSemVerとして解釈できる場合だけグループに入る。`latest` のようなタグは個別PRになる
+
+#### Lint系の除外（必須）
+
+Lint系はバージョンが上がると新しいルールが入り、既存のコードがCIのlintで落ちる。
+グループに入れたままだと、落ちる1つのせいで他の更新まで巻き込んでPR全体がマージできなくなる。
+`exclude-patterns` で外し、個別PRにする。グループから外れた依存はDependabotが個別にPRを立てる。
+
+対象は、更新でCIのチェックが落ちうるもの。
+
+| 種類 | 例 |
+|------|-----|
+| linter | `eslint*`, `stylelint*`, `pylint*`, `flake8*`, `ruff*`, `rubocop*`, `golangci-lint*`, `clippy*` |
+| formatter | `prettier*`, `black*`, `isort*`, `gofumpt*` |
+| 型チェッカー | `typescript`, `mypy*`, `pyright*` |
+
+- マニフェストを読み、実在する依存だけを `exclude-patterns` に書く。使っていないものを推測で足さない
+- 依存が `patterns` と `exclude-patterns` の両方に一致した場合は除外が優先される
+- テストフレームワークは外さない。バージョンが上がってもテストが落ちるのは実際の非互換なので、まとめて直す方がよい
+- `github-actions`・`docker`・`terraform` には該当するものが無いので `exclude-patterns` を書かない
 
 #### クールダウン設定（必須）
 
@@ -229,6 +252,7 @@ pnpm-lock.yaml の `specifier`、yarn.lock のディスクリプタのキー、p
 - 検出されたエコシステムのみ設定に含める（推測で追加しない）
 - 検出した全エコシステムに `<エコシステム名>-minor-and-patch` グループと `cooldown` を必ず置く
 - そのグループは `patterns` を `"*"` にし、`update-types` を `minor` と `patch` に限定する
+- Lint系は `exclude-patterns` でグループから外す。マニフェストに実在するものだけを書く
 - `github-actions`・`docker`・`terraform` の `cooldown` に `semver-*-days` を書かない
 - 既存の `.github/dependabot.yml` がある場合は手順3の方針で追記する。作り直して既存のキーを落とさない
 - 検出したのに `updates` エントリが無いエコシステムは必ず追加する

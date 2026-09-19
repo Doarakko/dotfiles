@@ -2,6 +2,9 @@
 
 ## 個人リポジトリ（npm・GitHub Actions・Terraform・Docker）
 
+`exclude-patterns` に書いているのは、このリポジトリのマニフェストに実在するLint系だけ。
+外した依存はグループに入らず、Dependabotが個別にPRを立てる。
+
 ```yaml
 version: 2
 updates:
@@ -19,6 +22,10 @@ updates:
         applies-to: version-updates
         patterns:
           - "*"
+        exclude-patterns:
+          - "eslint*"
+          - "prettier*"
+          - "typescript"
         update-types:
           - "minor"
           - "patch"

@@ -46,35 +46,5 @@
       "Read(**/id_rsa)",
       "Read(**/id_ed25519)"
     ]
-  },
-  "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true,
-    "ignoreViolations": {
-      "git": [".git/config"]
-    },
-    "filesystem": {
-      "allowWrite": [
-        "~/.codex"
-      ],
-      "denyWrite": [
-        "~/.codex/config.toml",
-        "~/.codex/plugins",
-        "~/.codex/rules",
-        "~/.codex/skills",
-        "~/.codex/vendor_imports",
-        "~/.codex/.tmp/bundled-marketplaces"
-      ]
-    },
-    "network": {
-      "allowedDomains": [
-        "github.com",
-        "api.github.com",
-        "json.schemastore.org",
-        "www.schemastore.org",
-        "chatgpt.com",
-        "*.openai.com"
-      ]
-    }
   }
 }

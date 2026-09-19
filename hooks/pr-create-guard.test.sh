@@ -10,7 +10,6 @@ GUARD="hooks/pr-create-guard.sh"
 FAILURES=0
 
 # 成果物の有無で判定が変わる。実際の置き場所を読まないよう使い捨ての場所へ向ける
-# サンドボックス下では既定の一時領域に作れないため、そこで書ける場所を使う
 MEDIA_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/pr-create-guard.XXXXXX") || exit 1
 trap 'rm -rf "$MEDIA_ROOT"' EXIT
 export CLAUDE_E2E_OUTPUT_ROOT="$MEDIA_ROOT"

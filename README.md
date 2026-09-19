@@ -59,8 +59,8 @@ Defined in `commands/`.
 | `coding-style-guide-review` | Check compliance with project conventions |
 | `pr-compliance-review` | Check an implementation against the PR description and linked issues |
 | `docs-update` | Update documentation to match code changes |
-| `dependabot-setting` | Generate `.github/dependabot.yml` |
-| `project-setup` | Audit dependency automation and CI/CD on an unfamiliar project |
+| `dependabot-setting` | Generate `.github/dependabot.yml` and pin mutable references |
+| `project-setup` | Audit dependency automation, runtime pinning, and CI/CD on an unfamiliar project |
 | `review-followup` | Shared post-review confirmation flow — invoked by the review commands, not by you |
 | `report-artifact` | Publish a review result or a plan as an HTML page on claude.ai |
 
@@ -91,7 +91,6 @@ Wired in `.claude-plugin/plugin.json`. The decision tables live in `hooks/*.test
 None of this can be inferred from the code.
 
 - **codex** — run `codex login`; without it every review fails with a 401. PR review additionally needs the repository registered at <https://chatgpt.com/codex/settings/code-review>. When codex is unusable the review falls back to Claude alone and pauses codex for 6 hours; `cat /tmp/claude/codex-review-cooldown` shows why. Signing in through `CODEX_API_KEY` / `CODEX_ACCESS_TOKEN` / `OPENAI_API_KEY` counts as signed in but leaves no `~/.codex/auth.json` to refresh, so `codex login` does not end that wait — delete the marker instead.
-- **codex under the Bash sandbox** — `sandbox.filesystem.allowWrite` must include `~/.codex` and `sandbox.network.allowedDomains` must include `chatgpt.com` and `*.openai.com`. Without the write grant codex dies at startup with `failed to initialize in-process app-server client: Operation not permitted`, before it ever checks credentials. `.claude/settings.json` here carries both, but it is this repository's own project settings and is not distributed with the plugin.
 - **gh** — 2.88.0 or newer to request `@copilot`, 2.99.0 or newer for `--attach` (E2E media on PRs). `--attach` exists only on `gh pr create`, not on `gh pr edit` or `gh pr comment`, so media cannot be added after the PR opens, and it cannot be combined with `--dry-run`.
 - **Copilot review effort** — cannot be passed from the CLI. Set it per repository under Settings > Copilot > Code review > Review effort level, or enable a ruleset with "Automatically request Copilot code review".
 - **Artifacts** — `/pr-review`, `/review-diff`, and `/plan-view` publish their output as an HTML page on claude.ai through the built-in `Artifact` tool.
@@ -108,17 +107,3 @@ None of this can be inferred from the code.
 `AGENTS.md` is the single source for this repository's rules. `CLAUDE.md` imports it with `@AGENTS.md`, so edit `AGENTS.md` and leave `CLAUDE.md` alone.
 
 Shell naming: `cc*` touches Claude Code alone, `ai*` touches the whole toolchain.
-
-## development
-
-- docker-compose
-- Docker Desktop for Mac
-- Git
-- Homebrew
-- Postman
-- Visual Studio Code
-- Claude Code
-- Codex
-- gh
-- [Playwright CLI](https://github.com/microsoft/playwright-cli)
-- cmux

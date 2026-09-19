@@ -61,11 +61,11 @@ if [[ -f "$STATE_FILE" && "$(cat "$STATE_FILE")" == "$HASH" ]]; then
 fi
 
 # codex が使えるかどうかの判定
-# ログイン済みでもトークン切れなら 401 になり、サンドボックスの制約でも起動に失敗する
+# ログイン済みでもトークン切れなら 401 になる
 # 次のターンでも直らない類の失敗を直前に起こしていれば、一定時間は codex レビューを誘わない
 # 待機の目印は codex レビュー側が理由付きで作る。hook は読み、待ち終わったら消す
-# 目印は codex レビューが動くサンドボックスからも書けて、hook からも同じ場所に見える必要がある
-# セッションごとに変わる一時ディレクトリでは指せないため、固定のパスを使う
+# 目印は codex レビュー側と hook の両方から同じ場所に見える必要がある
+# 一時ディレクトリは両者が同じ値を見る保証が無いため、固定のパスを使う
 COOLDOWN_FILE="${CLAUDE_CODEX_COOLDOWN_FILE:-/tmp/claude/codex-review-cooldown}"
 COOLDOWN_SECONDS="${CLAUDE_CODEX_COOLDOWN_SECONDS:-21600}"
 [[ "$COOLDOWN_SECONDS" =~ ^[0-9]+$ ]] || COOLDOWN_SECONDS=21600

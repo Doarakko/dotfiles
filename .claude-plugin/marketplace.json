@@ -10,7 +10,7 @@
     {
       "name": "doarakko-config",
       "source": "./",
-      "description": "Productivity commands for branch management, commit splitting, PR workflows, code review, CI/CD automation, and test creation"
+      "description": "Commands, skills, agents, and hooks for branch management, commit splitting, PR workflows, code review, CI/CD automation, and test creation"
     }
   ]
 }

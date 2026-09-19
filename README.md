@@ -42,7 +42,6 @@ npm packages land under the node version asdf selects, so re-run `aii` after swi
 | `/pr-review` | Review a PR in detail |
 | `/ci-fix` | Fix CI failures on the current branch's PR |
 | `/review-diff` | Review uncommitted local changes |
-| `/test-create` | Generate tests for changed files |
 | `/commit` | Commit and push — user-invoked only |
 | `/decision-save` | Write the session's technical decisions to a file |
 | `/plan-view` | Publish a plan file as an HTML page you can open in a browser |
@@ -58,6 +57,7 @@ Defined in `commands/`.
 | `test-review` | Review test quality |
 | `coding-style-guide-review` | Check compliance with project conventions |
 | `pr-compliance-review` | Check an implementation against the PR description and linked issues |
+| `test-implementation` | Add tests in the same turn as the implementation |
 | `docs-update` | Update documentation to match code changes |
 | `dependabot-setting` | Generate `.github/dependabot.yml` and pin mutable references |
 | `project-setup` | Audit dependency automation, runtime pinning, and CI/CD on an unfamiliar project |
@@ -72,7 +72,7 @@ Defined in `skills/<name>/SKILL.md`.
 | --- | --- |
 | `code-reviewer` | Review code, read-only. Loads the review skills above |
 | `codex-reviewer` | Second opinion from a different model via the codex CLI, read-only |
-| `test-generator` | Generate tests from source |
+| `test-generator` | Generate tests for one file. `test-implementation` fans out to it for 3+ files |
 
 Defined in `agents/`.
 

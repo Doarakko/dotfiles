@@ -22,10 +22,11 @@ allowed-tools: Read, Write, Edit, Glob, Bash(git remote *), Bash(mkdir *), Bash(
 | `pom.xml` | maven |
 | `build.gradle`, `build.gradle.kts` | gradle |
 | `Dockerfile`, `docker-compose.yml`, `docker-compose.yaml` | docker |
-| `.github/workflows/*.yml` | github-actions |
+| `.github/workflows/*.yml`, `.github/workflows/*.yaml` | github-actions |
 | `*.tf` | terraform |
 | `composer.json` | composer |
 | `Cargo.toml` | cargo |
+| `.pre-commit-config.yaml` | pre-commit |
 
 ### 2. スケジュール間隔の決定
 `git remote get-url origin` からオーナーを取得し、リポジトリの種別を判定する。
@@ -92,6 +93,7 @@ groups:
 | `github-actions` | `github-actions-minor-and-patch` |
 | `docker` | `docker-minor-and-patch` |
 | `terraform` | `terraform-minor-and-patch` |
+| `pre-commit` | `pre-commit-minor-and-patch` |
 
 - グループ名に使えるのは英字・`|`・`_`・`-` で、先頭と末尾は英字。数字は使えない
 - 開発用パッケージかどうかで分けない。`dependency-type` の `development` / `production` を使うとPRが割れ、まとめる意図と逆になる
@@ -118,6 +120,7 @@ Lint系はバージョンが上がると新しいルールが入り、既存の�
 - 依存が `patterns` と `exclude-patterns` の両方に一致した場合は除外が優先される
 - テストフレームワークは外さない。バージョンが上がってもテストが落ちるのは実際の非互換なので、まとめて直す方がよい
 - `github-actions`・`docker`・`terraform` には該当するものが無いので `exclude-patterns` を書かない
+- `pre-commit` はフック全体がLint系なので、除外するとグループが空になる。`exclude-patterns` を書かない
 
 #### クールダウン設定（必須）
 
@@ -126,7 +129,7 @@ Lint系はバージョンが上がると新しいルールが入り、既存の�
 | エコシステム | 設定するキー |
 |-------------|-------------|
 | SemVer対応（`npm`, `pip`, `bundler`, `gomod`, `maven`, `gradle`, `composer`, `cargo`） | `default-days`, `semver-major-days`, `semver-minor-days`, `semver-patch-days` |
-| `github-actions`, `docker`, `terraform` | `default-days` のみ |
+| `github-actions`, `docker`, `terraform`, `pre-commit` | `default-days` のみ |
 
 ```yaml
 cooldown:
@@ -136,7 +139,7 @@ cooldown:
   semver-patch-days: 3
 ```
 
-- `semver-*-days` はSemVer対応のエコシステムにしか効かない。`github-actions`・`docker`・`terraform` に書いても無視されるので置かない
+- `semver-*-days` はSemVer対応のエコシステムにしか効かない。`github-actions`・`docker`・`terraform`・`pre-commit` に書いても無視されるので置かない
 - グルーピングの `update-types` とは別系統で、そちらはこの3つでも効く。片方の可否をもう片方に当てはめない
 - クールダウンはバージョン更新にのみ適用され、セキュリティ更新には適用されない
 - 緊急のセキュリティ修正が待たされる点をユーザーに伝える
@@ -168,7 +171,7 @@ cooldown:
 | Dockerイメージ | `node:latest`, `node:24` | `node:24.10.0-bookworm@sha256:<ダイジェスト>` |
 | マニフェストの依存 | `"pkg": "latest"`, `"pkg": "*"`, gitのブランチ指定 | 上限のあるバージョン指定。ロックファイルが無ければ具体的なバージョン |
 | Terraformのprovider / module | 制約なし, `ref=main` | `version = "5.31.0"`, `ref=v1.2.3` |
-| pre-commitの `rev` | `main` | タグまたはコミットSHA |
+| pre-commitの `rev` | `main` | コミットSHA + `# frozen: <バージョン>` |
 | ランタイムのバージョン指定 | `.tool-versions` の `latest` | 具体的なバージョン |
 
 固定するとDependabotが更新を拾える形になるが、`runs-on:` のようにDependabotが扱わない箇所もある。
@@ -194,7 +197,7 @@ cooldown:
 
 #### Docker
 
-`Dockerfile` と `docker-compose.yml` の `FROM` / `image` を、具体的なバージョンタグとダイジェストで固定する。
+`Dockerfile` と `docker-compose.yml` / `docker-compose.yaml` の `FROM` / `image` を、具体的なバージョンタグとダイジェストで固定する。
 
 ```dockerfile
 FROM node:24.10.0-bookworm@sha256:<ダイジェスト>
@@ -209,6 +212,24 @@ FROM node:24.10.0-bookworm@sha256:<ダイジェスト>
 - dockerが使えない環境ではタグの固定までを行い、ダイジェストが未設定であることを報告する。推測値を書くくらいならタグ止まりの方がよい
 
 参考: https://github.com/dependabot/dependabot-core/blob/main/docker/README.md
+
+#### pre-commit
+
+`.pre-commit-config.yaml` の `rev` をコミットSHAへ固定し、`# frozen: <バージョン>` のコメントを付ける。
+
+```yaml
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 971923581912ef60a6b70dbf0c3e9a39563c9d47  # frozen: v0.14.14
+    hooks:
+      - id: ruff
+```
+
+- Dependabotはこのコメントを読んで更新の要否を判断し、更新時に `rev` とコメントの両方を書き換える。GitHub Actionsの `# <タグ>` と同じ仕組み
+- コメントにバージョンの接頭辞（`v1` など）を書くと、その範囲の最新タグへ更新される
+- SHAは `gh api repos/<owner>/<repo>/commits/<タグ>` で取得する
+
+参考: https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories
 
 #### マニフェストの依存
 

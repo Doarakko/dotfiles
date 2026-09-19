@@ -32,7 +32,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote
 
 - ロックファイルがない場合は `packageManager` フィールドやCIの実行コマンドから判定する
 - モノレポならワークスペースのディレクトリを列挙し、どこにマニフェストがあるかを控える
-- `git remote get-url origin` でホスティング先を確認する。GitHub でない場合は手順2・5をスキップし、その旨を報告する
+- `git remote get-url origin` でホスティング先を確認する。GitHub でない場合は手順2と、手順5のうちGitHub Actionsに関する項目をスキップし、その旨を報告する
+- 可変な参照の固定はホスティング先に関係なく実行する。Dockerイメージやマニフェストの `latest` はGitHubと無関係なため、手順5ごと飛ばさない
 - ビルド・Lint・テストの実行コマンドを集める（`package.json` の `scripts`、`Makefile`、`Taskfile.yml`、`justfile`、`tox.ini`、`noxfile.py`、`pyproject.toml` など）。手順5で使う
 
 ### 2. 依存更新の自動化を確認
@@ -128,6 +129,9 @@ engine-strict=true
 - **build・lint・test**: 手順1で集めた実際の実行コマンドを使ってワークフローを追加する。プロジェクトに存在しないコマンドを書かない
 - **deploy**: デプロイ先とその認証情報は推測できないため、生成せずユーザーに確認する
 
+可変な参照の固定は、固定した対象ごとに行を分けて報告する。手順5の対象はワークフローに限らないため、
+まとめて1行にすると何が直って何が残ったか分からない。Dependabotが更新を拾わない対象は、その旨も併記する。
+
 ワークフローを追加するときは以下に従う。
 
 - 既存のワークフローがある場合は新規ファイルを作らず、ジョブを足せないか先に検討する
@@ -148,7 +152,11 @@ engine-strict=true
 | クールダウン（pnpm） | なし | pnpm-workspace.yaml に追記 |
 | マイナー/パッチのグルーピング | なし | dependabot-setting の基準で追記 |
 | engine-strict | なし | .npmrc に追記 |
-| 可変な参照の固定 | uses がタグ指定・イメージが latest | SHAと具体的なバージョンへ固定 |
+| 可変な参照の固定（uses） | タグ指定 | SHAへ固定 |
+| 可変な参照の固定（runs-on） | ubuntu-latest | ubuntu-24.04 へ固定。Dependabotの対象外なので手動で追う |
+| 可変な参照の固定（Dockerイメージ） | latest | バージョンタグとダイジェストへ固定 |
+| 可変な参照の固定（マニフェスト） | `"*"` が2件 | 上限のあるレンジへ。ロックファイルの再生成が必要 |
+| 可変な参照の固定（Terraform） | 制約なし | version を明示 |
 | build | あり | - |
 | lint | あり（pushのみ） | pull_request を追加 |
 | test | なし | .github/workflows/test.yml を追加 |

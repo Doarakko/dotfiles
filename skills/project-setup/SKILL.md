@@ -6,9 +6,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote
 
 # プロジェクト基本設定
 
-初めて触るプロジェクトで、依存更新の自動化・パッケージマネージャのクールダウン・CIの自動化が入っているかを確認し、足りないものを整備する。
+初めて触るプロジェクトで、依存更新の自動化・パッケージマネージャのクールダウン・ランタイムのバージョン固定・CIの自動化が入っているかを確認し、足りないものを整備する。
 
-先に3つの観点すべてを調査してから、まとめて結果を出す。1つ直すたびに報告しない。
+先に4つの観点すべてを調査してから、まとめて結果を出す。1つ直すたびに報告しない。
 
 ## 手順
 
@@ -32,8 +32,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote
 
 - ロックファイルがない場合は `packageManager` フィールドやCIの実行コマンドから判定する
 - モノレポならワークスペースのディレクトリを列挙し、どこにマニフェストがあるかを控える
-- `git remote get-url origin` でホスティング先を確認する。GitHub でない場合は手順2・4をスキップし、その旨を報告する
-- ビルド・Lint・テストの実行コマンドを集める（`package.json` の `scripts`、`Makefile`、`Taskfile.yml`、`justfile`、`tox.ini`、`noxfile.py`、`pyproject.toml` など）。手順4で使う
+- `git remote get-url origin` でホスティング先を確認する。GitHub でない場合は手順2・5をスキップし、その旨を報告する
+- ビルド・Lint・テストの実行コマンドを集める（`package.json` の `scripts`、`Makefile`、`Taskfile.yml`、`justfile`、`tox.ini`、`noxfile.py`、`pyproject.toml` など）。手順5で使う
 
 ### 2. 依存更新の自動化を確認
 
@@ -46,11 +46,13 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote
 
 | 状態 | 対応 |
 |------|------|
-| どちらもない | `dependabot-setting` スキルで `.github/dependabot.yml` を生成する |
-| Dependabot あり・`cooldown` なし | `dependabot-setting` スキルの基準に合わせて `cooldown` を追記する |
-| Dependabot あり・エコシステムに漏れがある | 手順1で検出したエコシステムを追記する |
+| どちらもない | `Skill` で `dependabot-setting` を呼び、`.github/dependabot.yml` を生成する |
+| Dependabot あり | `Skill` で `dependabot-setting` を呼ぶ。エコシステムの漏れ・グルーピング・クールダウンの過不足の判定も含め、既存ファイルの扱いは同スキルの「既存設定の確認」の方針に従う |
 | Renovate あり・`minimumReleaseAge` なし | `minimumReleaseAge` を追記する |
 | 両方ある | PRが二重に立つので、どちらに寄せるかユーザーに確認する |
+
+Dependabotの設定内容の基準（対象エコシステム・グルーピング・クールダウンの値・アクションのSHA固定）は
+`dependabot-setting` スキルに一本化している。このファイルへ基準を書き写さない。二重管理になって片方だけ古くなる。
 
 Renovate に追記する場合は最上位に置く。特定パッケージだけ緩めたいときは `packageRules` で上書きする。
 
@@ -85,7 +87,23 @@ cargo・go・composer・maven・gradle にはクールダウンの公式オプ�
 
 緊急のセキュリティ修正が待たされる点をユーザーに伝える。除外の指定方法はパッケージマネージャごとに異なるため（npm は `min-release-age-exclude`、pnpm は `minimumReleaseAgeExclude`、yarn は `npmPreapprovedPackages`、uv は `exclude-newer-package`）、必要になった時点で公式ドキュメントを確認する。
 
-### 4. CIの自動化を確認
+### 4. npmのランタイムバージョン固定を確認（必須）
+
+npm を使うプロジェクトでは `.npmrc` に `engine-strict=true` を必ず入れる。入っていなければ追記する。
+
+```ini
+engine-strict=true
+```
+
+既定の `false` では、宣言したランタイムと非互換のパッケージでも警告だけで入る。
+`true` にすると、現在のNode.jsと非互換を宣言しているパッケージのインストールを拒否するため、
+手元とCIでランタイムがずれたまま進むことがなくなる。
+
+- `package.json` に `engines.node` が無ければ、`.node-version` / `.nvmrc` / CIの `setup-node` で使っているバージョンに合わせて追加する。宣言が無いと固定するものが無い
+- 自分のプロジェクトだけでなく依存の `engines` 宣言でも失敗するようになる。既存プロジェクトへ入れる場合はインストールが通らなくなる可能性をユーザーに伝える
+- `--force` で上書きできる
+
+### 5. CIの自動化を確認
 
 `.github/workflows/` 配下のファイルを読み、以下が自動化されているかを判定する。
 
@@ -103,6 +121,7 @@ cargo・go・composer・maven・gradle にはクールダウンの公式オプ�
 - build・lint・test が `on: pull_request` で走るか。`push` だけだとPRで結果が出ない
 - 手順1で集めた実行コマンドのうち、CIから呼ばれていないものがないか
 - `gh workflow list` と `gh run list --limit 10` で、定義があるだけで実際は走っていない・失敗し続けているワークフローがないか
+- `latest`・`*`・移動するタグ・`main` のような可変な参照が残っていないか。`uses:`・`runs-on:`・Dockerイメージ・マニフェストの依存など、バージョンを指定している箇所をすべて見る。残っていれば `Skill` で `dependabot-setting` を呼び、「可変な参照の固定」を実行させる。SHAやダイジェストの解決はそちらの手順で行うので、このスキルでは書き換えない
 
 不足している場合の対応。
 
@@ -115,9 +134,9 @@ cargo・go・composer・maven・gradle にはクールダウンの公式オプ�
 - `permissions` は最小限にする（読むだけなら `contents: read`）
 - 同一ブランチの多重実行を止めるため `concurrency` に `cancel-in-progress: true` を入れる
 - ランタイムのバージョンはプロジェクトの指定（`.node-version`、`.python-version`、`go.mod`、`engines` など）に合わせる
-- アクションのバージョンは既存ワークフローで使っている指定方法に揃える
+- `uses:` は `Skill` で `dependabot-setting` を呼び、「可変な参照の固定」でコミットSHAへ固定させる。既存ワークフローがタグ指定のままでも、そちらに揃えない
 
-### 5. 報告
+### 6. 報告
 
 調査結果を表で出し、変更したファイルと残っている対応を分けて示す。
 
@@ -127,6 +146,9 @@ cargo・go・composer・maven・gradle にはクールダウンの公式オプ�
 | 依存更新の自動化 | なし | .github/dependabot.yml を生成 |
 | クールダウン（Dependabot） | なし | 生成した設定に含めた |
 | クールダウン（pnpm） | なし | pnpm-workspace.yaml に追記 |
+| マイナー/パッチのグルーピング | なし | dependabot-setting の基準で追記 |
+| engine-strict | なし | .npmrc に追記 |
+| 可変な参照の固定 | uses がタグ指定・イメージが latest | SHAと具体的なバージョンへ固定 |
 | build | あり | - |
 | lint | あり（pushのみ） | pull_request を追加 |
 | test | なし | .github/workflows/test.yml を追加 |
@@ -136,7 +158,9 @@ cargo・go・composer・maven・gradle にはクールダウンの公式オプ�
 ## 絶対に守るべきルール
 
 - 変更するのはプロジェクト配下のファイルだけ。`~/.npmrc`、`~/.bundle/config`、`~/.config/pip/pip.conf` などユーザー全体の設定は変更しない
-- 既存の設定値を勝手に書き換えない。値が入っている項目は現状を報告するだけにする
+- 既存の設定値を勝手に書き換えない。値が入っている項目は現状を報告するだけにする。例外は可変な参照（`latest`、`*`、移動するタグ、`main`）で、これらは固定した値へ書き換える
 - 依存のインストールやロックファイルの更新を実行しない。設定ファイルを書くところまでにする
 - 検出したパッケージマネージャ・エコシステムの設定だけを追加する。使っていないものを推測で足さない
 - クールダウンのオプションは変化が速い。表にないパッケージマネージャや、値が効かない場合は公式ドキュメントを確認してから書く
+- クールダウン・`engine-strict`・可変な参照の固定は必須。要否をユーザーに確認せず入れる。`latest` はエコシステムやファイルの種類を問わず残さない
+- Dependabotの設定を作る・直すときは必ず `dependabot-setting` スキルを呼ぶ。基準をこのファイルに複製しない

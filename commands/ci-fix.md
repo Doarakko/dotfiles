@@ -1,6 +1,6 @@
 ---
 description: 現在のブランチのPRでCI失敗を自動修正する
-allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Bash(pip-audit *), Read, Write, Edit, Grep, Glob
+allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Bash(pip-audit *), Read, Write, Edit, Grep, Glob, Skill
 ---
 
 # CI修正コマンド
@@ -24,7 +24,7 @@ allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(
    b. `git merge --no-commit --no-ff origin/master` でコンフリクトを確認
    c. コンフリクトがなければ `git merge --abort`
    d. コンフリクトがあれば解消してコミット
-3. 失敗タイプに応じて修正:
+3. 失敗タイプに応じて修正。`doarakko-config:test-implementation` が起動した場合は自動化文脈である旨を渡し、テスト基盤の確認を出させない:
    - lint: `npm run lint -- --fix` / `ruff check --fix` / `golangci-lint run --fix`
    - type: 型エラーを分析・修正
    - test: テスト実行して失敗箇所を特定・修正

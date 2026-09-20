@@ -15,9 +15,9 @@ PRのレビューコメントとCIエラーを自動修正する。
 PR番号省略時は現在のブランチのPRを使用。
 
 ## PR情報（自動取得）
-- PR詳細: !`gh pr view $0 --json title,body,url,number 2>/dev/null || gh pr view --json title,body,url,number`
+- PR詳細: !`gh pr view $0 --json title,body,url,number,additions,deletions,changedFiles 2>/dev/null || gh pr view --json title,body,url,number,additions,deletions,changedFiles`
 - CIステータス: !`gh pr checks $0 2>/dev/null; true`
-- PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
+- 変更ファイル一覧: !`gh pr diff $0 --name-only 2>/dev/null || gh pr diff --name-only`
 - リポジトリ名: !`gh repo view --json nameWithOwner -q .nameWithOwner`
 - PR番号: !`gh pr view $0 --json number -q .number 2>/dev/null || gh pr view --json number -q .number`
 - レビュー一覧: 上記のPR番号とリポジトリ名を使って `gh api "repos/{リポジトリ名}/pulls/{PR番号}/reviews"` で取得し、各レビューの `id` と `user.login` を得る（承認・変更要求の判定にも使用）
@@ -36,6 +36,8 @@ PR番号省略時は現在のブランチのPRを使用。
 
 ## 手順
 1. 自動取得データを元に修正対象を特定（Codex 由来のコメントは `/reviews/{review_id}/comments` から取得したものを必ず含めること）
+   - 差分の全文は取らない。インラインコメントは `diff_hunk` に該当箇所の文脈を持つため、それで足りる
+   - 足りない場合だけ、対象のファイルを Read する。`gh pr diff` はパス指定を受け付けないため、絞って取ることはできない
 2. コンフリクト確認・解消
    a. `git fetch origin` でリモートを取得
    b. `git merge --no-commit --no-ff origin/master` でコンフリクトを確認

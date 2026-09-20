@@ -21,6 +21,7 @@ skills: security-review, test-review, coding-style-guide-review, pr-compliance-r
    - 未追跡ファイルは差分に現れない。`git status --short -- :/<指定されたパス>`でどれが未追跡かを見てから、その分だけReadで読む。この出力が印字するパスは現在地基準なので判別にだけ使う
    - Readは絶対パスを要求する。`git rev-parse --show-toplevel`の結果へ、渡されたルート基準のパスを繋いで渡す
    - 範囲の指定が無い: `git status --short`と`git diff HEAD`
+   - PRが対象: `gh pr diff <PR番号>`。パス指定は受け付けないため、絞るなら取得後に読み分ける
    - 範囲外のファイルの差分は取らない。範囲内の変更を理解するために周辺をReadやGrepで読むのは構わない
 2. 指定された観点でレビュー:
    - security: security-review Skillの基準でチェック

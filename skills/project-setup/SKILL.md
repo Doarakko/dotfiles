@@ -1,7 +1,7 @@
 ---
 name: project-setup
 description: 初めて触るプロジェクトやセットアップ時に、依存更新の自動化・クールダウン・CI/CDが設定されているか確認して整備するときに使用
-allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote *), Bash(git log *), Bash(gh workflow list *), Bash(gh run list *), Bash(mkdir *)
+allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote *), Bash(git log *), Bash(gh workflow list *), Bash(gh run list *), Bash(gh api repos/*), Bash(mkdir *)
 ---
 
 # プロジェクト基本設定
@@ -32,7 +32,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote
 
 - ロックファイルがない場合は `packageManager` フィールドやCIの実行コマンドから判定する
 - モノレポならワークスペースのディレクトリを列挙し、どこにマニフェストがあるかを控える
-- `git remote get-url origin` でホスティング先を確認する。GitHub でない場合は手順2と、手順5のうちGitHub Actionsに関する項目をスキップし、その旨を報告する
+- `git remote get-url origin` でホスティング先を確認する。GitHub でない場合は手順2と、手順5のうちGitHub ActionsとGitHub APIに関する項目をスキップし、その旨を報告する
 - 可変な参照の固定はホスティング先に関係なく実行する。Dockerイメージやマニフェストの `latest` はGitHubと無関係なため、手順5ごと飛ばさない
 - ビルド・Lint・テストの実行コマンドを集める（`package.json` の `scripts`、`Makefile`、`Taskfile.yml`、`justfile`、`tox.ini`、`noxfile.py`、`pyproject.toml` など）。手順5で使う
 
@@ -114,6 +114,7 @@ engine-strict=true
 | lint | Lint・フォーマット・型チェックを実行するジョブがあるか |
 | test | テストを実行するジョブがあるか |
 | deploy | デプロイするジョブがあるか。ライブラリなら公開（publish/release）で読み替える |
+| preview | PRごとにプレビュー環境へデプロイしているか。CLIやライブラリなど公開先がURLでないものは対象外 |
 
 ジョブ名ではなく `run` で実行しているコマンドを見て判定する。名前が `ci` でも中身がテストだけのことがある。
 
@@ -122,12 +123,18 @@ engine-strict=true
 - build・lint・test が `on: pull_request` で走るか。`push` だけだとPRで結果が出ない
 - 手順1で集めた実行コマンドのうち、CIから呼ばれていないものがないか
 - `gh workflow list` と `gh run list --limit 10` で、定義があるだけで実際は走っていない・失敗し続けているワークフローがないか
+- プレビューが用意されているか。次の順で見て、いずれかが当たれば「あり」とする
+  1. `.github/workflows/` に `on: pull_request` で走りデプロイを実行しているジョブがあるか。`vercel`、`netlify deploy`、`wrangler pages deploy`、`firebase hosting:channel:deploy` などを `run` と `uses` の中身で判定する。`aws s3 sync` とGitHub Pagesへのデプロイは本番の更新であることが多いため、PR番号やブランチ名を出力先のパス・サブドメインへ含めているときだけプレビューとみなす
+  2. ワークフローが無くても、ホスティング側のGit連携（Vercel・Netlify・Cloudflare PagesのGitHub App）がプレビューを作っていることがある。手順1で確認したリモートのowner/repoを使い、`gh api repos/<owner>/<repo>/deployments -X GET -F per_page=100 --jq '[.[].environment] | unique'` を実行し、`Preview` を含む環境名（`Preview – <プロジェクト名>` のように接尾辞が付く）があれば連携ありとして扱い、ワークフローを追加しない（`-F` を付けると既定でPOSTになるため `-X GET` が要る）
+  3. `vercel.json`・`netlify.toml`・`wrangler.toml`・`firebase.json` の有無も手掛かりにする
+
+  2番で何も返らないことを「プレビュー無し」の根拠にしない。デプロイの記録に出るのは実質Vercelで、NetlifyとCloudflare PagesはPRのチェック（commit status / check run）側に出ることが多い。1番と3番で決まらなければユーザーに確認する。
 - `latest`・`*`・移動するタグ・`main` のような可変な参照が残っていないか。`uses:`・`runs-on:`・Dockerイメージ・マニフェストの依存など、バージョンを指定している箇所をすべて見る。残っていれば `Skill` で `dependabot-setting` を呼び、「可変な参照の固定」を実行させる。SHAやダイジェストの解決はそちらの手順で行うので、このスキルでは書き換えない
 
 不足している場合の対応。
 
 - **build・lint・test**: 手順1で集めた実際の実行コマンドを使ってワークフローを追加する。プロジェクトに存在しないコマンドを書かない
-- **deploy**: デプロイ先とその認証情報は推測できないため、生成せずユーザーに確認する
+- **deploy・preview**: デプロイ先とその認証情報は推測できないため、生成せずまずユーザーに確認する。追加すると決まったときだけ、後述の「ワークフローを追加するときは以下に従う」に従って書く
 
 可変な参照の固定は、固定した対象ごとに行を分けて報告する。手順5の対象はワークフローに限らないため、
 まとめて1行にすると何が直って何が残ったか分からない。Dependabotが更新を拾わない対象は、その旨も併記する。
@@ -140,9 +147,15 @@ engine-strict=true
 - ランタイムのバージョンはプロジェクトの指定（`.node-version`、`.python-version`、`go.mod`、`engines` など）に合わせる
 - `uses:` は `Skill` で `dependabot-setting` を呼び、「可変な参照の固定」でコミットSHAへ固定させる。既存ワークフローがタグ指定のままでも、そちらに揃えない
 
+ユーザーの確認を得てプレビュー用のワークフローを追加する場合は、あわせて以下に従う。
+
+- `pull_request_target` を使わない。secretsと書き込み権限を持った状態で走るため、PRのコードをチェックアウトして実行すると秘密情報を奪われる
+- ワークフローでプレビューを作る場合、forkからのPRには `secrets` が渡らずプレビューが出ない。その前提をユーザーに伝える。ホスティング側のGit連携はGitHub Actionsを経由しないため、こちらは当てはまらない
+- PRがクローズされたときにプレビューを片付ける処理も用意する。別のワークフローとして作る。同じワークフローに入れるなら `on` の `types` を `[opened, synchronize, reopened, closed]` と明示し、ジョブ側の `if: github.event.action == 'closed'` で分ける。`types` を書くと既定の `opened`・`synchronize`・`reopened` が上書きされるため、`[closed]` だけにするとプレビューそのものが作られなくなる
+
 ### 6. 報告
 
-調査結果を表で出し、変更したファイルと残っている対応を分けて示す。
+調査結果を表で出し、変更したファイルと残っている対応を分けて示す。対象外だった項目は行を消さず、状態を `対象外` として残す。
 
 ```
 | 項目 | 状態 | 対応 |
@@ -161,6 +174,7 @@ engine-strict=true
 | lint | あり（pushのみ） | pull_request を追加 |
 | test | なし | .github/workflows/test.yml を追加 |
 | deploy | なし | デプロイ先の確認待ち |
+| preview | あり | Vercelの連携で作成済み |
 ```
 
 ## 絶対に守るべきルール

@@ -1,7 +1,7 @@
 ---
 name: project-setup
-description: 初めて触るプロジェクトやセットアップ時に、依存更新の自動化・クールダウン・CI/CDが設定されているか確認して整備するときに使用
-allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote *), Bash(git log *), Bash(gh workflow list *), Bash(gh run list *), Bash(mkdir *)
+description: 依存更新の自動化・クールダウン・ランタイムのバージョン固定・CI/CD・プレビューが整っているかを確認して整備するときに使用。初めて触るプロジェクト、リポジトリを新規作成したとき、そのリポジトリで初めてpushやPR作成をするときにも使う
+allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote *), Bash(git log *), Bash(gh workflow list *), Bash(gh run list *), Bash(gh api repos/*), Bash(mkdir *)
 ---
 
 # プロジェクト基本設定
@@ -9,6 +9,18 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote
 初めて触るプロジェクトで、依存更新の自動化・パッケージマネージャのクールダウン・ランタイムのバージョン固定・CIの自動化が入っているかを確認し、足りないものを整備する。
 
 先に4つの観点すべてを調査してから、まとめて結果を出す。1つ直すたびに報告しない。
+
+## 起動と確認
+
+呼ばれ方で書き込みの進め方を変える。手順へ入る前に、まずユーザーの応答を待てる文脈かを決める。
+呼び出し元から自動化文脈だと伝えられた場合と、無人で完走させる手順の途中（`/pr-create`・`/pr-fix`・`/ci-fix`）、
+hook由来の継続ターンは待てない文脈。実行中のコマンド定義から判断できる場合も含める。
+
+- ユーザーが明示的に呼んだとき（`/project-setup`、整備の依頼）は手順どおり進める。必須の項目は要否を確認せず入れる
+- 応答を待てる文脈で自分から起動したときは、調査だけ済ませて不足の一覧を報告し、整備してよいかを最終応答で確認する。承認を得るまでファイルを書かない。ユーザーが進めている作業の差分へ設定ファイルの変更を混ぜない
+- 応答を待てない文脈では確認を出さない。不足の一覧を最終報告へ添えるだけにして、ファイルには手を入れずに終える。判断がつかなかった項目は状態を `要確認` として載せ、何を確認したいかを添える
+- ユーザーが明示的に呼んだとき以外は `dependabot-setting` を呼ばない。委譲先は呼ばれた時点で設定ファイルを書き、自前の確認も出すため、この節の歯止めが素通りする。手順2と手順5の委譲指示より、この節が優先する
+- 同じセッションの同じリポジトリでは一度だけ提案する。断られたら、そのセッションでは再度持ち出さない
 
 ## 手順
 
@@ -32,7 +44,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote
 
 - ロックファイルがない場合は `packageManager` フィールドやCIの実行コマンドから判定する
 - モノレポならワークスペースのディレクトリを列挙し、どこにマニフェストがあるかを控える
-- `git remote get-url origin` でホスティング先を確認する。GitHub でない場合は手順2と、手順5のうちGitHub Actionsに関する項目をスキップし、その旨を報告する
+- `git remote get-url origin` でホスティング先を確認する。GitHub でない場合は手順2と、手順5のうちGitHub ActionsとGitHub APIに関する項目をスキップし、その旨を報告する
 - 可変な参照の固定はホスティング先に関係なく実行する。Dockerイメージやマニフェストの `latest` はGitHubと無関係なため、手順5ごと飛ばさない
 - ビルド・Lint・テストの実行コマンドを集める（`package.json` の `scripts`、`Makefile`、`Taskfile.yml`、`justfile`、`tox.ini`、`noxfile.py`、`pyproject.toml` など）。手順5で使う
 
@@ -51,6 +63,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill, Bash(ls *), Bash(git remote
 | Dependabot あり | `Skill` で `dependabot-setting` を呼ぶ。エコシステムの漏れ・グルーピング・クールダウンの過不足の判定も含め、既存ファイルの扱いは同スキルの「既存設定の確認」の方針に従う |
 | Renovate あり・`minimumReleaseAge` なし | `minimumReleaseAge` を追記する |
 | 両方ある | PRが二重に立つので、どちらに寄せるかユーザーに確認する |
+
+`dependabot-setting` へ委譲してよいかは「起動と確認」に従う。
 
 Dependabotの設定内容の基準（対象エコシステム・グルーピング・クールダウンの値・アクションのSHA固定）は
 `dependabot-setting` スキルに一本化している。このファイルへ基準を書き写さない。二重管理になって片方だけ古くなる。
@@ -114,6 +128,7 @@ engine-strict=true
 | lint | Lint・フォーマット・型チェックを実行するジョブがあるか |
 | test | テストを実行するジョブがあるか |
 | deploy | デプロイするジョブがあるか。ライブラリなら公開（publish/release）で読み替える |
+| preview | PRごとにプレビュー環境へデプロイしているか。CLIやライブラリなど公開先がURLでないものは対象外 |
 
 ジョブ名ではなく `run` で実行しているコマンドを見て判定する。名前が `ci` でも中身がテストだけのことがある。
 
@@ -122,12 +137,18 @@ engine-strict=true
 - build・lint・test が `on: pull_request` で走るか。`push` だけだとPRで結果が出ない
 - 手順1で集めた実行コマンドのうち、CIから呼ばれていないものがないか
 - `gh workflow list` と `gh run list --limit 10` で、定義があるだけで実際は走っていない・失敗し続けているワークフローがないか
-- `latest`・`*`・移動するタグ・`main` のような可変な参照が残っていないか。`uses:`・`runs-on:`・Dockerイメージ・マニフェストの依存など、バージョンを指定している箇所をすべて見る。残っていれば `Skill` で `dependabot-setting` を呼び、「可変な参照の固定」を実行させる。SHAやダイジェストの解決はそちらの手順で行うので、このスキルでは書き換えない
+- プレビューが用意されているか。次の順で見て、いずれかが当たれば「あり」とする
+  1. `.github/workflows/` に `on: pull_request` で走りデプロイを実行しているジョブがあるか。`vercel`、`netlify deploy`、`wrangler pages deploy`、`firebase hosting:channel:deploy` などを `run` と `uses` の中身で判定する。`aws s3 sync` とGitHub Pagesへのデプロイは本番の更新であることが多いため、PR番号やブランチ名を出力先のパス・サブドメインへ含めているときだけプレビューとみなす
+  2. ワークフローが無くても、ホスティング側のGit連携（Vercel・Netlify・Cloudflare PagesのGitHub App）がプレビューを作っていることがある。手順1で確認したリモートのowner/repoを使い、`gh api repos/<owner>/<repo>/deployments -X GET -F per_page=100 --jq '[.[].environment] | unique'` を実行し、`Preview` を含む環境名（`Preview – <プロジェクト名>` のように接尾辞が付く）があれば連携ありとして扱い、ワークフローを追加しない（`-F` を付けると既定でPOSTになるため `-X GET` が要る）
+  3. `vercel.json`・`netlify.toml`・`wrangler.toml`・`firebase.json` の有無も手掛かりにする
+
+  2番で何も返らないことを「プレビュー無し」の根拠にしない。デプロイの記録に出るのは実質Vercelで、NetlifyとCloudflare PagesはPRのチェック（commit status / check run）側に出ることが多い。1番と3番で決まらなければユーザーに確認する。
+- `latest`・`*`・移動するタグ・`main` のような可変な参照が残っていないか。`uses:`・`runs-on:`・Dockerイメージ・マニフェストの依存など、バージョンを指定している箇所をすべて見る。残っていれば `Skill` で `dependabot-setting` を呼び、「可変な参照の固定」を実行させる。委譲してよいかは「起動と確認」に従う。SHAやダイジェストの解決はそちらの手順で行うので、このスキルでは書き換えない
 
 不足している場合の対応。
 
 - **build・lint・test**: 手順1で集めた実際の実行コマンドを使ってワークフローを追加する。プロジェクトに存在しないコマンドを書かない
-- **deploy**: デプロイ先とその認証情報は推測できないため、生成せずユーザーに確認する
+- **deploy・preview**: デプロイ先とその認証情報は推測できないため、生成せずまずユーザーに確認する。追加すると決まったときだけ、後述の「ワークフローを追加するときは以下に従う」に従って書く
 
 可変な参照の固定は、固定した対象ごとに行を分けて報告する。手順5の対象はワークフローに限らないため、
 まとめて1行にすると何が直って何が残ったか分からない。Dependabotが更新を拾わない対象は、その旨も併記する。
@@ -140,9 +161,15 @@ engine-strict=true
 - ランタイムのバージョンはプロジェクトの指定（`.node-version`、`.python-version`、`go.mod`、`engines` など）に合わせる
 - `uses:` は `Skill` で `dependabot-setting` を呼び、「可変な参照の固定」でコミットSHAへ固定させる。既存ワークフローがタグ指定のままでも、そちらに揃えない
 
+ユーザーの確認を得てプレビュー用のワークフローを追加する場合は、あわせて以下に従う。
+
+- `pull_request_target` を使わない。secretsと書き込み権限を持った状態で走るため、PRのコードをチェックアウトして実行すると秘密情報を奪われる
+- ワークフローでプレビューを作る場合、forkからのPRには `secrets` が渡らずプレビューが出ない。その前提をユーザーに伝える。ホスティング側のGit連携はGitHub Actionsを経由しないため、こちらは当てはまらない
+- PRがクローズされたときにプレビューを片付ける処理も用意する。別のワークフローとして作る。同じワークフローに入れるなら `on` の `types` を `[opened, synchronize, reopened, closed]` と明示し、ジョブ側の `if: github.event.action == 'closed'` で分ける。`types` を書くと既定の `opened`・`synchronize`・`reopened` が上書きされるため、`[closed]` だけにするとプレビューそのものが作られなくなる
+
 ### 6. 報告
 
-調査結果を表で出し、変更したファイルと残っている対応を分けて示す。
+調査結果を表で出し、変更したファイルと残っている対応を分けて示す。対象外だった項目は行を消さず、状態を `対象外` として残す。確認できず判断がつかなかった項目は `要確認` とする。
 
 ```
 | 項目 | 状態 | 対応 |
@@ -161,6 +188,7 @@ engine-strict=true
 | lint | あり（pushのみ） | pull_request を追加 |
 | test | なし | .github/workflows/test.yml を追加 |
 | deploy | なし | デプロイ先の確認待ち |
+| preview | あり | Vercelの連携で作成済み |
 ```
 
 ## 絶対に守るべきルール
@@ -170,5 +198,5 @@ engine-strict=true
 - 依存のインストールやロックファイルの更新を実行しない。設定ファイルを書くところまでにする
 - 検出したパッケージマネージャ・エコシステムの設定だけを追加する。使っていないものを推測で足さない
 - クールダウンのオプションは変化が速い。表にないパッケージマネージャや、値が効かない場合は公式ドキュメントを確認してから書く
-- クールダウン・`engine-strict`・可変な参照の固定は必須。要否をユーザーに確認せず入れる。`latest` はエコシステムやファイルの種類を問わず残さない
+- ユーザーが明示的に呼んだ場合、クールダウン・`engine-strict`・可変な参照の固定は必須。要否をユーザーに確認せず入れる。`latest` はエコシステムやファイルの種類を問わず残さない
 - Dependabotの設定を作る・直すときは必ず `dependabot-setting` スキルを呼ぶ。基準をこのファイルに複製しない

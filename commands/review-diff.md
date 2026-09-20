@@ -16,14 +16,13 @@ allowed-tools: Skill, Bash(git status *), Bash(git diff *), Bash(codex exec *), 
 
 ## 変更情報（自動取得）
 - ステータス: !`git status --short`
-- ステージ済み差分: !`git diff --cached`
-- 未ステージ差分: !`git diff`
+- 変更の規模: !`git diff HEAD --stat`
 
 ## 対象
 指定された対象: $ARGUMENTS（省略時は全変更）
 
 ## 手順
-1. 上記の自動取得データを元にレビュー
+1. 上記で変更の広がりを把握する。差分の中身はSubagentが各自で取得するので、ここでは全文を読まない
 2. プロジェクト環境を分析（言語、フレームワーク）
 3. `code-reviewer` Subagentと`codex-reviewer` Subagentを1メッセージ内で同時に起動（`code-reviewer`の観点はSubagentのSkill定義に従う）
    - 未インストールや未ログインで`codex`が使えない環境では`codex-reviewer`がスキップを報告するので、その旨を結果に含める

@@ -60,7 +60,7 @@ Defined in `commands/`.
 | `test-implementation` | Add tests in the same turn as the implementation |
 | `docs-update` | Update documentation to match code changes |
 | `dependabot-setting` | Generate `.github/dependabot.yml` and pin mutable references |
-| `project-setup` | Audit dependency automation, runtime pinning, and CI/CD — build, lint, test, deploy, and per-PR preview — on an unfamiliar project |
+| `project-setup` | Audit dependency automation, runtime pinning, and CI/CD — build, lint, test, deploy, and per-PR preview. Triggers on an unfamiliar project, a newly created repository, and the first push or PR in a repository |
 | `review-followup` | Shared post-review confirmation flow — invoked by the review commands, not by you |
 | `report-artifact` | Publish a review result or a plan as an HTML page on claude.ai |
 

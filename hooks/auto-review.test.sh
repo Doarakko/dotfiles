@@ -55,7 +55,11 @@ uninstall_codex() {
 }
 
 # 特定のファイルだけ目印を作れない状態にする
-REAL_SHASUM=$(command -v shasum)
+REAL_SHASUM=$(command -v shasum) || REAL_SHASUM=""
+if [[ -z "$REAL_SHASUM" ]]; then
+  echo "shasum が見つかりません。このテストは目印の作成を差し替えて確かめるため、本物が要ります"
+  exit 1
+fi
 install_failing_shasum() {
   cat >"$WORK/bin/shasum" <<EOF
 #!/bin/bash
@@ -67,13 +71,24 @@ EOF
   chmod +x "$WORK/bin/shasum"
 }
 
-uninstall_failing_shasum() {
+uninstall_shasum_stub() {
   rm -f "$WORK/bin/shasum"
 }
 
 # 目印を作る手段そのものが無い状態にする
 install_broken_shasum() {
   printf '#!/bin/bash\nexit 127\n' >"$WORK/bin/shasum"
+  chmod +x "$WORK/bin/shasum"
+}
+
+# 標準入力は通るがファイル引数では落ちる状態にする
+# 手段の有無を標準入力だけで判定すると、この形を取り逃がす
+install_argument_failing_shasum() {
+  cat >"$WORK/bin/shasum" <<EOF
+#!/bin/bash
+[ "\$#" -gt 0 ] && exit 1
+exec ${REAL_SHASUM}
+EOF
   chmod +x "$WORK/bin/shasum"
 }
 
@@ -406,7 +421,7 @@ check '読めないままなら繰り返し要求しない' "$(scope_for scope-u
 # 消えた場合と同じ目印にすると、この変化が拾えなくなる
 rm -f "$WORK/repo/unreadable.txt"
 check '読めないファイルの削除を拾う' "$(scope_for scope-unknown)" unreadable.txt
-uninstall_failing_shasum
+uninstall_shasum_stub
 printf 'readable again\n' >"$WORK/repo/unreadable.txt"
 check '読めるようになったら再び拾う' "$(scope_for scope-unknown)" unreadable.txt
 
@@ -418,7 +433,17 @@ printf 'A\n' >"$WORK/repo/tracked.txt"
 check '手段が無ければ全体へ倒す' "$(scope_for scope-nohash)" all
 printf 'AA\n' >"$WORK/repo/tracked.txt"
 check '手段が無いまま変更しても黙らない' "$(scope_for scope-nohash)" all
-uninstall_failing_shasum
+uninstall_shasum_stub
+printf 'base\n' >"$WORK/repo/tracked.txt"
+
+# 標準入力だけが通る手段も、使えないものとして扱う
+check '引数で落ちる手段の一度目' "$(scope_for scope-argfail)" all
+install_argument_failing_shasum
+printf 'B\n' >"$WORK/repo/tracked.txt"
+check '引数で落ちる手段なら全体へ倒す' "$(scope_for scope-argfail)" all
+printf 'BB\n' >"$WORK/repo/tracked.txt"
+check '引数で落ちる手段のまま変更しても黙らない' "$(scope_for scope-argfail)" all
+uninstall_shasum_stub
 printf 'base\n' >"$WORK/repo/tracked.txt"
 printf 'readable\n' >"$WORK/repo/unreadable.txt"
 

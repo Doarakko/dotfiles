@@ -47,8 +47,13 @@ fi
 
 # 目印を作る手段そのものが使えないか
 # ファイル個別の「読めない」と混ぜると、すべてが同じ値で固定され変更が黙って落ち続ける
+# 試すのは実際に使う呼び出しの形。標準入力だけ試すと、ファイル引数で落ちる実装を取り逃がす
 HASH_USABLE=true
-printf '' | shasum >/dev/null 2>&1 || HASH_USABLE=false
+HASH_PROBE="${STATE_DIR}/.probe"
+if ! { mkdir -p "$STATE_DIR" && : >"$HASH_PROBE" && shasum -- "$HASH_PROBE" >/dev/null 2>&1; }; then
+  HASH_USABLE=false
+fi
+rm -f "$HASH_PROBE"
 
 # 変更のあるパスを列挙する
 list_changed_paths() {
@@ -232,7 +237,7 @@ fi
 if [[ "$SCOPE_USABLE" == "true" ]]; then
   SCOPE_SECTION="レビュー範囲は次のファイルの未コミット変更だけ。ほかのファイルは前回のレビューで見ているので読み直さない。
 $(printf '%s\n' "$PENDING" | sed 's/^/   - /')
-パスはリポジトリのルート基準。現在地に関わらず効くよう \`git diff HEAD -- :/<パス>\` の形で渡す。
+パスはリポジトリのルート基準。差分の取り方は各レビュアーの定義に従う。
 範囲内の変更を理解するために、範囲外のファイルを Read / Grep で読むのは構わない。指摘の対象にはしない。"
 else
   SCOPE_SECTION="レビュー範囲は未コミットの変更すべて。"

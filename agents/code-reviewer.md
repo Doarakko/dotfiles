@@ -17,6 +17,7 @@ skills: security-review, test-review, coding-style-guide-review, pr-compliance-r
 ## 手順
 1. 差分を取得・分析する。取得の仕方はレビュー範囲の指定で決まる
    - 範囲の指定がある: `git diff HEAD -- :/<指定されたパス>`。パスはリポジトリのルート基準で渡されるため、`:/`を前置しないとサブディレクトリで起動したセッションでは0行になる
+   - 最初のコミットがまだ無いリポジトリでは`HEAD`を解決できず異常終了する。`git rev-parse --verify --quiet HEAD`で確かめ、無ければ`git diff --cached -- :/<指定されたパス>`を使う
    - 未追跡ファイルは差分に現れない。`git status --short -- :/<指定されたパス>`でどれが未追跡かを見てから、その分だけReadで読む。この出力が印字するパスは現在地基準なので判別にだけ使う
    - Readは絶対パスを要求する。`git rev-parse --show-toplevel`の結果へ、渡されたルート基準のパスを繋いで渡す
    - 範囲の指定が無い: `git status --short`と`git diff HEAD`

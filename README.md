@@ -82,9 +82,9 @@ Defined in `agents/`.
 | --- | --- |
 | `PreToolUse` | Routes `gh pr create` through `/pr-create`, denying non-draft PRs (`hooks/pr-create-guard.sh`) |
 | `PostToolUse` | Runs `make lint` after edits when the Makefile has that target |
-| `Stop` | Reviews uncommitted changes before the turn ends (`hooks/auto-review.sh`) |
+| `Stop` | Reviews uncommitted changes before the turn ends, scoping every review after the first to the files that changed since the last one (`hooks/auto-review.sh`) |
 
-Wired in `.claude-plugin/plugin.json`. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. The same workflow runs `scripts/validate-definitions.sh`, which checks every command, skill, and agent for a closed frontmatter block, for permission specifiers Claude Code accepts but never consults (`Write(path)`, `Glob(path)`, and friends — use `Edit(path)`), and for `doarakko-config:` references that point at nothing. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
+Wired in `.claude-plugin/plugin.json`. The reviewed point is recorded per session under the temporary directory, never in git — your index and your partial staging stay untouched. Whenever that record cannot be trusted (first review of a session, a corrupted or missing record, a path that will not fit on one line, more changed files than `CLAUDE_AUTO_REVIEW_MAX_SCOPE_FILES`, default 40) the review falls back to the whole uncommitted diff rather than silently dropping anything. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. The same workflow runs `scripts/validate-definitions.sh`, which checks every command, skill, and agent for a closed frontmatter block, for permission specifiers Claude Code accepts but never consults (`Write(path)`, `Glob(path)`, and friends — use `Edit(path)`), and for `doarakko-config:` references that point at nothing. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
 
 ## External setup
 

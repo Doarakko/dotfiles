@@ -28,8 +28,14 @@ skills: security-review, test-review, coding-style-guide-review, pr-compliance-r
    - test: test-review Skillの基準でチェック
    - quality: コード品質（命名、重複、複雑度、デッドコード）
    - guidelines: coding-style-guide-review Skillの基準でチェック（プロジェクト固有の規約準拠）
-   - pr-compliance: pr-compliance-review Skillの基準でチェック（PR・Issue要件の充足）
-3. 問題点と改善提案をサマリーとして返す
+   - pr-compliance: pr-compliance-review Skillの基準でチェック（PR・Issue要件の充足）。PRが対象のときだけ回す
+3. 問題点と改善提案をサマリーとして返す。回さなかった観点があれば、その理由とあわせて内訳に書く
+
+## 観点の適用条件
+
+`all`を渡されても、対象に判定材料が無い観点は回さない。回したつもりで回っていない状態を作らないため、外したことは報告に書く。
+
+- pr-compliance: PRの説明文・リンク先・添付画像・GitHub Issueと実装を照合する観点。ローカルの未コミット差分にはどれも存在しないので回せない。対象がPRのときだけ回す
 
 ## 出力形式
 - 問題の重要度（Critical/High/Medium/Low）
@@ -41,3 +47,4 @@ skills: security-review, test-review, coding-style-guide-review, pr-compliance-r
 - 読み取り専用（コードの変更は行わない）
 - レビュー結果のみ返す
 - 範囲が指定されたら、その外側の変更は指摘しない。前回までのレビューで見ている
+- 判定材料の無い観点を回さない。空振りのぶんだけレビューが重くなる

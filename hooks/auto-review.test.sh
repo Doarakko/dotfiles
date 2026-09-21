@@ -143,6 +143,30 @@ judge() {
   fi
 }
 
+SESSION_START_HOOK="${AUTO_REVIEW_SESSION_START_HOOK:-hooks/auto-review-session-start.sh}"
+
+session_start() {
+  jq -n --arg s "$1" --arg c "${CWD_OVERRIDE:-$WORK/repo}" --arg src "${2:-startup}" \
+    '{session_id:$s,cwd:$c,source:$src}' |
+    env TMPDIR="$WORK" bash "$SESSION_START_HOOK" >/dev/null 2>&1
+}
+
+# 依頼・上限の通知・無言を見分ける
+verdict_for() {
+  local context status
+  context=$(context_for "$1")
+  status=$?
+  if [[ "$status" -ne 0 ]]; then
+    printf 'error'
+  elif [[ -z "$context" ]]; then
+    printf 'silent'
+  elif printf '%s' "$context" | grep -q '上限に達した'; then
+    printf 'limit'
+  else
+    printf 'review'
+  fi
+}
+
 context_for() {
   local raw status
   raw=$(jq -n --arg s "$1" --arg c "${CWD_OVERRIDE:-$WORK/repo}" \
@@ -304,6 +328,8 @@ expect silent 'git 管理外'
 unset CWD_OVERRIDE
 
 # ここからレビュー範囲の絞り込み。記録が残らないよう、ケースごとにセッションを分ける
+# 回数の上限で止まると範囲を確かめられないので、この区間では十分に大きくしておく
+export CLAUDE_AUTO_REVIEW_MAX_ROUNDS=1000
 rm -f "$CLAUDE_CODEX_COOLDOWN_FILE"
 
 # 初回は絞り込みの土台が無いので全体を見せる
@@ -457,6 +483,108 @@ check 'コミット無しの一度目' "$(scope_for scope-fresh)" all
 printf 'more\n' >"$WORK/fresh/staged.txt"
 check 'コミット無しでもステージ済みを追える' "$(scope_for scope-fresh)" staged.txt
 unset CWD_OVERRIDE
+
+# 編集の無いターンでは黙る
+printf 'turn\n' >"$WORK/repo/tracked.txt"
+check '編集のあるターンは依頼する' "$(verdict_for scope-turn)" review
+check '編集の無いターンは黙る' "$(verdict_for scope-turn)" silent
+printf 'turn2\n' >"$WORK/repo/tracked.txt"
+check '再び編集すれば依頼する' "$(verdict_for scope-turn)" review
+
+# セッション開始時点を控えておけば、既存の未コミット変更があっても最初のターンは黙る
+session_start scope-fresh-start
+check '開始時点の変更だけなら黙る' "$(verdict_for scope-fresh-start)" silent
+
+# 前回 Stop 時点の記録が無ければ、編集の有無を判断できない。黙らず発火する
+session_start scope-lastseen-gone
+check '控えがあるうちは黙る' "$(verdict_for scope-lastseen-gone)" silent
+rm -f "$WORK/claude-auto-review/scope-lastseen-gone.lastseen"
+check '前回時点の控えが無ければ黙らない' "$(verdict_for scope-lastseen-gone)" review
+# ただしレビュー済みにはしない。何か編集すれば既存の変更も対象に入る
+printf 'edited\n' >"$WORK/repo/tracked.txt"
+check '編集すれば開始時点の変更も対象になる' "$(scope_for scope-fresh-start)" all
+
+# 1セッションあたりの回数に上限がある
+export CLAUDE_AUTO_REVIEW_MAX_ROUNDS=2
+REVIEWED_RECORD="$WORK/claude-auto-review/scope-rounds.reviewed"
+printf 'r1\n' >"$WORK/repo/tracked.txt"
+check '上限の内側は依頼する' "$(verdict_for scope-rounds)" review
+printf 'r2\n' >"$WORK/repo/tracked.txt"
+check '上限ちょうどまでは依頼する' "$(verdict_for scope-rounds)" review
+
+# 上限ちょうどの回は実際に依頼を出しているので、その継続ターンは記録する
+# 記録しないと、次の通知がレビュー済みのファイルまで未レビューとして数え直す
+before_continue=$(cat "$REVIEWED_RECORD" 2>/dev/null || true)
+printf 'r2-fixed\n' >"$WORK/repo/tracked.txt"
+STOP_HOOK_ACTIVE=true verdict_for scope-rounds >/dev/null
+if [[ "$(cat "$REVIEWED_RECORD" 2>/dev/null || true)" == "$before_continue" ]]; then
+  printf 'FAIL  上限ちょうどの回の継続ターンが記録されていない\n'
+  FAILURES=$((FAILURES + 1))
+fi
+
+reviewed_at_limit=$(cat "$REVIEWED_RECORD" 2>/dev/null || true)
+printf 'r3\n' >"$WORK/repo/tracked.txt"
+check '上限に達したら知らせる' "$(verdict_for scope-rounds)" limit
+
+# 上限で止めた変更は未レビューのまま残す。記録そのものを比べる
+# 内容の文字列は記録に現れないため、それを探す検査は常に素通りする
+if [[ "$(cat "$REVIEWED_RECORD" 2>/dev/null || true)" != "$reviewed_at_limit" ]]; then
+  printf 'FAIL  上限の通知でレビュー済みとして記録されている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+
+# 上限の通知もターンを続けるため、直後の継続ターンで記録してはいけない
+STOP_HOOK_ACTIVE=true verdict_for scope-rounds >/dev/null
+if [[ "$(cat "$REVIEWED_RECORD" 2>/dev/null || true)" != "$reviewed_at_limit" ]]; then
+  printf 'FAIL  上限の通知後の継続ターンでレビュー済みとして記録されている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+
+printf 'r4\n' >"$WORK/repo/tracked.txt"
+check '知らせるのは一度だけ' "$(verdict_for scope-rounds)" silent
+
+# 壊れた回数は0として扱う。上限で止めるより余分に回るほうが安全
+printf 'broken\n' >"$WORK/claude-auto-review/scope-rounds.rounds"
+printf 'r5\n' >"$WORK/repo/tracked.txt"
+check '回数が数値でなければ0として扱う' "$(verdict_for scope-rounds)" review
+
+# hook 由来の継続ターンは回数に数えない
+printf 'r6\n' >"$WORK/repo/tracked.txt"
+STOP_HOOK_ACTIVE=true verdict_for scope-rounds >/dev/null
+if [[ "$(cat "$WORK/claude-auto-review/scope-rounds.rounds" 2>/dev/null)" != "1" ]]; then
+  printf 'FAIL  継続ターンが回数に数えられている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+unset CLAUDE_AUTO_REVIEW_MAX_ROUNDS
+
+# 使い切った回数を戻すのは、セッションが始まり直したときだけ
+printf '3\n' >"$WORK/claude-auto-review/scope-reset.rounds"
+session_start scope-reset resume
+if [[ "$(cat "$WORK/claude-auto-review/scope-reset.rounds" 2>/dev/null)" != "3" ]]; then
+  printf 'FAIL  再開で回数が戻っている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+session_start scope-reset compact
+if [[ "$(cat "$WORK/claude-auto-review/scope-reset.rounds" 2>/dev/null)" != "3" ]]; then
+  printf 'FAIL  圧縮後の再開で回数が戻っている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+session_start scope-reset startup
+if [[ -f "$WORK/claude-auto-review/scope-reset.rounds" ]]; then
+  printf 'FAIL  開始で回数が戻っていない\n'
+  FAILURES=$((FAILURES + 1))
+fi
+
+# 圧縮はターンの途中で起きる。そこで控えを取り直すと、そのターンの編集が飲まれる
+session_start scope-compact
+printf 'compacted\n' >"$WORK/repo/tracked.txt"
+session_start scope-compact compact
+check '圧縮を挟んでも編集のあったターンは依頼する' "$(verdict_for scope-compact)" review
+
+session_start scope-compact-quiet
+session_start scope-compact-quiet compact
+check '圧縮を挟んでも編集が無ければ黙る' "$(verdict_for scope-compact-quiet)" silent
+printf 'base\n' >"$WORK/repo/tracked.txt"
 
 # 差分が無ければ何も言わない
 # ステージしたものが残っているので、作業ツリーと索引の両方をコミット時点へ戻す

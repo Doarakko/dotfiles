@@ -7,6 +7,21 @@
     "email": "2wua4nlyi@gmail.com"
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/auto-review-session-start.sh"
+            ],
+            "timeout": 15
+          }
+        ],
+        "description": "Record the worktree at session start so untouched turns stay quiet"
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -15,7 +30,9 @@
             "type": "command",
             "if": "Bash(gh pr create *)",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/pr-create-guard.sh"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/pr-create-guard.sh"
+            ],
             "timeout": 10
           }
         ],
@@ -40,7 +57,9 @@
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/auto-review.sh"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/auto-review.sh"
+            ],
             "timeout": 30,
             "statusMessage": "未レビューの差分を確認中..."
           }

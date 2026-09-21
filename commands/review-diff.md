@@ -16,7 +16,7 @@ allowed-tools: Skill, Bash(git status *), Bash(git diff *), Bash(codex exec *), 
 
 ## 変更情報（自動取得）
 - ステータス: !`git status --short`
-- 変更の規模: !`git diff HEAD --stat`
+- 変更の規模: !`git rev-parse --verify --quiet HEAD >/dev/null 2>&1 && git diff HEAD --stat || git diff --cached --stat`
 
 ## 対象
 指定された対象: $ARGUMENTS（省略時は全変更）

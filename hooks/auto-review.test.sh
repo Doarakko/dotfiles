@@ -66,7 +66,7 @@ install_failing_shasum() {
 for arg in "\$@"; do
   [[ "\$arg" == *unreadable.txt ]] && exit 1
 done
-exec ${REAL_SHASUM} "\$@"
+exec "${REAL_SHASUM}" "\$@"
 EOF
   chmod +x "$WORK/bin/shasum"
 }
@@ -87,7 +87,7 @@ install_argument_failing_shasum() {
   cat >"$WORK/bin/shasum" <<EOF
 #!/bin/bash
 [ "\$#" -gt 0 ] && exit 1
-exec ${REAL_SHASUM}
+exec "${REAL_SHASUM}"
 EOF
   chmod +x "$WORK/bin/shasum"
 }

@@ -2,18 +2,24 @@
 
 # Claude Code 自動レビュー Hook
 # 未レビューの差分が残ったまま作業を完了させないよう、レビューと修正を促す
+# 2周目以降は前回レビュー以降に変わったファイルだけを対象にする
 
 set -euo pipefail
 
 INPUT=$(cat)
 
+TAB=$'\t'
+
 # セッションごとにレビュー済みの状態を記録する（リポジトリは汚さない）
+# 記録するのは変更のあるパスと、その時点の内容の目印
+# この記録は hook だけが読み書きするため一時ディレクトリでよい
+# レビュー範囲は記録ではなく依頼文へ載せて渡すので、外部と置き場所を共有しない
 STATE_DIR="${TMPDIR:-/tmp}/claude-auto-review"
 SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' | tr -cd 'A-Za-z0-9._-')
 if [[ -z "$SESSION_ID" ]]; then
   SESSION_ID="unknown"
 fi
-STATE_FILE="${STATE_DIR}/${SESSION_ID}.sha"
+STATE_FILE="${STATE_DIR}/${SESSION_ID}.reviewed"
 
 # hook 入力の作業ディレクトリへ移動（取得できなければ現在地のまま）
 HOOK_CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty')
@@ -26,38 +32,137 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
   exit 0
 fi
 
-WORKTREE_STATUS=$(git status --porcelain 2>/dev/null || true)
-HASH=$(
-  {
-    printf '%s' "$WORKTREE_STATUS"
-    git diff HEAD 2>/dev/null || true
-    # 未追跡ファイルは差分に現れないため、内容を個別にハッシュへ含める
-    while IFS= read -r -d '' untracked_file; do
-      shasum "$untracked_file" 2>/dev/null || true
-    done < <(git ls-files --others --exclude-standard -z 2>/dev/null)
-  } | shasum | awk '{print $1}'
-)
+# リポジトリのルートへ揃える
+# 差分の列挙はルート基準のパスを返すが、未追跡ファイルの列挙とファイルの存在判定は現在地基準になる
+# サブディレクトリで起動していると両者が噛み合わず、変更を取りこぼす
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
+if [[ -n "$REPO_ROOT" && -d "$REPO_ROOT" ]]; then
+  cd "$REPO_ROOT"
+fi
 
-record_hash() {
+HEAD_EXISTS=false
+if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+  HEAD_EXISTS=true
+fi
+
+# 目印を作る手段そのものが使えないか
+# ファイル個別の「読めない」と混ぜると、すべてが同じ値で固定され変更が黙って落ち続ける
+# 試すのは実際に使う呼び出しの形。標準入力だけ試すと、ファイル引数で落ちる実装を取り逃がす
+HASH_USABLE=true
+HASH_PROBE="${STATE_DIR}/.probe"
+if ! { mkdir -p "$STATE_DIR" && : >"$HASH_PROBE" && shasum -- "$HASH_PROBE" >/dev/null 2>&1; }; then
+  HASH_USABLE=false
+fi
+rm -f "$HASH_PROBE"
+
+# 変更のあるパスを列挙する
+list_changed_paths() {
+  if [[ "$HEAD_EXISTS" == "true" ]]; then
+    # 名前の付け替えは検出させない。片側のパスしか挙がらないと記録と突き合わせられない
+    git diff HEAD --name-only --no-renames -z 2>/dev/null || true
+  else
+    # 最初のコミットがまだ無いリポジトリでは、記録済みのものがそのまま変更にあたる
+    git ls-files --cached -z 2>/dev/null || true
+  fi
+  # 未追跡ファイルは差分に現れないため、別に挙げる
+  git ls-files --others --exclude-standard -z 2>/dev/null || true
+}
+
+# パスごとの内容の目印を作る
+# 先頭がハイフンのパスをオプションと解釈させないため、区切りを必ず置く
+mark_for() {
+  local target=$1 sum=""
+  if [[ -f "$target" ]]; then
+    sum=$(shasum -- "$target" 2>/dev/null) || sum=""
+  elif [[ -e "$target" || -L "$target" ]]; then
+    # 中身を直接読めないもの（入れ子のリポジトリ、ディレクトリを指すリンク）
+    # 差分から目印を作れるのは最初のコミットがある場合だけ
+    if [[ "$HEAD_EXISTS" == "true" ]]; then
+      sum=$(git diff HEAD -- "$target" 2>/dev/null | shasum 2>/dev/null) || sum=""
+    fi
+  else
+    # 消えたファイル。目印が無いこと自体が変化になる
+    printf 'gone'
+    return
+  fi
+  if [[ -z "$sum" ]]; then
+    # 読めないので中身の変化までは追えない
+    # 消えた場合と同じ値にすると、変化しない値のまま状態の移り変わりも拾えなくなる
+    printf 'unknown'
+    return
+  fi
+  # 実行ビットだけが変わった場合も拾えるよう、目印に混ぜる
+  printf '%s%s' "${sum%% *}" "$([[ -x "$target" ]] && printf 'x')"
+}
+
+# レビュー範囲を絞れるか。絞れないときは未コミットの変更すべてを対象にする
+SCOPE_USABLE=$HASH_USABLE
+
+RECORDS=""
+# ループをパイプラインへ入れない。部分シェルになると絞り込みの可否が外へ伝わらない
+while IFS= read -r -d '' changed_path; do
+  case "$changed_path" in
+  *"$TAB"* | *$'\n'*)
+    # 1行1ファイルで記録するため、改行やタブを含む名前は一覧へ出せない
+    # 記録には残して変化を追えるようにし、範囲の提示だけ諦める
+    SCOPE_USABLE=false
+    RECORDS="${RECORDS}$(mark_for "$changed_path")${TAB}$(printf '%s' "$changed_path" | tr '\n\t' '??')"$'\n'
+    continue
+    ;;
+  esac
+  RECORDS="${RECORDS}$(mark_for "$changed_path")${TAB}${changed_path}"$'\n'
+done < <(list_changed_paths)
+RECORDS=$(printf '%s' "$RECORDS" | LC_ALL=C sort -u)
+
+record_state() {
   mkdir -p "$STATE_DIR"
-  printf '%s' "$HASH" >"$STATE_FILE"
+  if [[ -n "$RECORDS" ]]; then
+    printf '%s\n' "$RECORDS" >"$STATE_FILE"
+  else
+    : >"$STATE_FILE"
+  fi
 }
 
 # この hook 由来で継続中のターン。レビュー済みとして記録し停止を許可する
 STOP_HOOK_ACTIVE=$(printf '%s' "$INPUT" | jq -r '.stop_hook_active // false')
 if [[ "$STOP_HOOK_ACTIVE" == "true" ]]; then
-  record_hash
+  record_state
   exit 0
 fi
 
 # レビュー対象の差分がない
-if [[ -z "$WORKTREE_STATUS" ]]; then
+if [[ -z "$RECORDS" ]]; then
   exit 0
 fi
 
-# 前回レビュー以降に変更がない
-if [[ -f "$STATE_FILE" && "$(cat "$STATE_FILE")" == "$HASH" ]]; then
+PREVIOUS=""
+# 壊れた記録は読まなかったことにする。絞り込みを誤るより全体を見せるほうが安全
+if [[ -f "$STATE_FILE" ]] && ! grep -qv "$TAB" "$STATE_FILE" 2>/dev/null; then
+  PREVIOUS=$(LC_ALL=C sort -u "$STATE_FILE" 2>/dev/null || true)
+fi
+
+if [[ -n "$PREVIOUS" ]]; then
+  # 前回に無く今回にある行が、レビューされていない変更
+  PENDING=$(LC_ALL=C comm -13 <(printf '%s\n' "$PREVIOUS") <(printf '%s\n' "$RECORDS") 2>/dev/null | cut -f2- || true)
+else
+  # 記録が無ければ絞り込みの土台も無いので、全体を見せる
+  PENDING=$(printf '%s\n' "$RECORDS" | cut -f2-)
+  SCOPE_USABLE=false
+fi
+
+# 前回から増えた変更がない（元に戻した、ステージしただけ）
+# 目印を作れない環境では変化していないと言い切れないため、黙らずに全体を見せ続ける
+if [[ -z "$PENDING" && "$HASH_USABLE" == "true" ]]; then
+  record_state
   exit 0
+fi
+
+# 一覧が長くなると、絞り込みで浮いたぶんを一覧自体が食う
+MAX_SCOPE_FILES="${CLAUDE_AUTO_REVIEW_MAX_SCOPE_FILES:-40}"
+[[ "$MAX_SCOPE_FILES" =~ ^[0-9]+$ ]] || MAX_SCOPE_FILES=40
+# 先頭がゼロの指定を8進数と解釈させない
+if (( $(printf '%s\n' "$PENDING" | wc -l) > 10#$MAX_SCOPE_FILES )); then
+  SCOPE_USABLE=false
 fi
 
 # codex が使えるかどうかの判定
@@ -124,17 +229,29 @@ codex_usable() {
 }
 
 if codex_usable; then
-  REVIEWERS=$'   - doarakko-config:code-reviewer（観点: all）\n   - doarakko-config:codex-reviewer（未コミット差分をレビュー）'
+  REVIEWERS=$'   - doarakko-config:code-reviewer（観点: all）\n   - doarakko-config:codex-reviewer'
 else
   REVIEWERS='   - doarakko-config:code-reviewer（観点: all）'
 fi
 
+if [[ "$SCOPE_USABLE" == "true" ]]; then
+  SCOPE_SECTION="レビュー範囲は次のファイルの未コミット変更だけ。ほかのファイルは前回のレビューで見ているので読み直さない。
+$(printf '%s\n' "$PENDING" | sed 's/^/   - /')
+パスはリポジトリのルート基準。差分の取り方は各レビュアーの定義に従う。
+範囲内の変更を理解するために、範囲外のファイルを Read / Grep で読むのは構わない。指摘の対象にはしない。"
+else
+  SCOPE_SECTION="レビュー範囲は未コミットの変更すべて。"
+fi
+
 # レビュー済みの記録は、依頼を出せると確定してから残す
 # 途中で落ちた場合にレビュー済みとみなされ、この差分が二度と対象にならないのを避けるため
-record_hash
+record_state
 
 REVIEW_INSTRUCTION="未レビューの変更があります。完了する前に次を実行してください。
-1. 次のサブエージェントを 1 メッセージ内で同時に起動する
+
+${SCOPE_SECTION}
+
+1. 次のサブエージェントを 1 メッセージ内で同時に起動する。上のレビュー範囲をそのまま渡す
 ${REVIEWERS}
 2. 各レビュアーの指摘をマージし、同一箇所を指す重複指摘は 1 件にまとめる
 3. Critical / High の指摘はこのターン内で修正する

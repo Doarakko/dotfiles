@@ -2,7 +2,7 @@
 description: 新規ブランチ作成からPR作成までを一連で実行する
 when_to_use: PR・プルリクエストの作成を依頼されたとき、変更をPRにまとめるとき、`gh pr create`を実行しようとしたときに使用
 argument-hint: [--from-main]
-allowed-tools: Skill, Read, Write, Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git rev-parse *), Bash(gh pr create *), Bash(gh pr edit *), Bash(gh pr view *), Bash(gh pr comment *), Bash(gh auth refresh *), Bash(gh --version*), Bash(cat *), Bash(ls *), Bash(find *), Bash(mkdir *), Bash(echo *), Bash(printf *), Bash(basename *), Bash(tr *), Bash(test *), Bash(curl -s -o /dev/null *), Bash(playwright-cli *)
+allowed-tools: Skill, Read, Write, Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git stash *), Bash(git checkout *), Bash(git rev-parse *), Bash(gh pr create *), Bash(gh pr edit *), Bash(gh pr view *), Bash(gh repo view *), Bash(gh pr comment *), Bash(gh auth refresh *), Bash(gh --version*), Bash(cat *), Bash(ls *), Bash(find *), Bash(mkdir *), Bash(echo *), Bash(printf *), Bash(basename *), Bash(tr *), Bash(test *), Bash(curl -s -o /dev/null *), Bash(playwright-cli *)
 ---
 
 # PR作成ワークフロー
@@ -81,14 +81,17 @@ allowed-tools: Skill, Read, Write, Bash(git add *), Bash(git commit *), Bash(git
 
    - `gh` の置換は本文へのテキスト置換なので、`<details>` の中に書いた参照もそのまま書き換わる
    - 前後比較は2列のテーブルに入れて横に並べる。縦の長さが半分になる
-8. `gh pr create --draft --reviewer @copilot --title <タイトル> --body-file <本文ファイル>` でドラフトPR作成とCopilotへのレビュー依頼
+8. `gh repo view --json isInOrganization --jq .isInOrganization` でオーナー種別を確認してからドラフトPRを作成する
+   - `true`（Organization所有）: `gh pr create --draft --reviewer @copilot --title <タイトル> --body-file <本文ファイル>`
+   - `false`（個人アカウント所有）または取得に失敗: `--reviewer @copilot` を外して作成し、Copilotへは依頼していない旨を報告する
+   - Copilotレビューの消費は依頼したユーザーのシートに紐づく。会社のCopilot Business/Enterpriseのシートを持っている場合、個人リポジトリでの依頼が会社のAIクレジットを使い、会社の利用明細にリポジトリ名とユーザー名が残る。判定できないときも依頼しない側へ倒す
    - 撮影した場合は、選んだファイルごとに `--attach '<絶対パス>'` を並べて渡す。本文に参照を書いてあればその位置がアップロード先のURLに書き換わり、本文に書いた代替テキストがそのまま使われるため `#代替テキスト` は不要
    - 動画はプレイヤーとして表示され、代替テキストを持たない
    - 添付は1コマンドあたり50ファイルまで。超えるなら主要な導線に絞る
    - **ただし枚数は50ではなく本文の読みやすさで決める。目安は6枚。** 上限に収まっていても、読めない本文はレビューされない
    - `--attach` は `gh` 2.99.0以降の `gh pr create` にしかない。`gh pr edit` や `gh pr comment` には無いため、PRを作ったあとから添付を足すことはできない。`gh --version` で確認し、2.99.0未満なら `--attach` と本文の画像参照を外して作成し、添付できなかった旨を必ず報告する
    - 一部の添付だけが失敗した場合、成功した分を伴ってPRは作成される。終了コードは非0になるが標準出力にPRのURLが出るので、**URLが出ていればPRを作り直さない**。添付の一部が失敗した旨を報告する
-   - `@copilot` の指定には `gh` 2.88.0以降が必要。それ未満やCopilot code reviewが使えないリポジトリではコマンドが失敗する
+   - 依頼する場合、`@copilot` の指定には `gh` 2.88.0以降が必要。それ未満やCopilot code reviewが使えないリポジトリではコマンドが失敗する
    - 失敗したら `gh pr view --json url,number` でPRが作成済みかを先に確認する
      - 未作成なら失敗の原因になったオプションを外して作り直す
      - 作成済みならPRはそのままにして、依頼や添付だけが失敗した旨を報告する（重複してPRを作らない）

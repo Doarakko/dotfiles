@@ -37,7 +37,7 @@ npm packages land under the node version asdf selects, so re-run `aii` after swi
 
 | | |
 | --- | --- |
-| `/pr-create` | Branch, commit, open a draft PR, request Copilot and Codex review |
+| `/pr-create` | Branch, commit, open a draft PR, request Codex review, and Copilot review on organization-owned repositories |
 | `/pr-fix` | Apply PR review comments and fix CI failures |
 | `/pr-review` | Review a PR in detail |
 | `/ci-fix` | Fix CI failures on the current branch's PR |
@@ -82,9 +82,9 @@ Defined in `agents/`.
 | --- | --- |
 | `PreToolUse` | Routes `gh pr create` through `/pr-create`, denying non-draft PRs (`hooks/pr-create-guard.sh`) |
 | `PostToolUse` | Runs `make lint` after edits when the Makefile has that target |
-| `Stop` | Reviews uncommitted changes before the turn ends (`hooks/auto-review.sh`) |
+| `Stop` | Reviews uncommitted changes before the turn ends, scoping every review after the first to the files that changed since the last one (`hooks/auto-review.sh`) |
 
-Wired in `.claude-plugin/plugin.json`. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. The same workflow runs `scripts/validate-definitions.sh`, which checks every command, skill, and agent for a closed frontmatter block, for permission specifiers Claude Code accepts but never consults (`Write(path)`, `Glob(path)`, and friends — use `Edit(path)`), and for `doarakko-config:` references that point at nothing. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
+Wired in `.claude-plugin/plugin.json`. The reviewed point is recorded per session under the temporary directory, never in git — your index and your partial staging stay untouched. Whenever that record cannot be trusted (first review of a session, a corrupted or missing record, a path that will not fit on one line, more changed files than `CLAUDE_AUTO_REVIEW_MAX_SCOPE_FILES`, default 40) the review falls back to the whole uncommitted diff rather than silently dropping anything. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. The same workflow runs `scripts/validate-definitions.sh`, which checks every command, skill, and agent for a closed frontmatter block, for permission specifiers Claude Code accepts but never consults (`Write(path)`, `Glob(path)`, and friends — use `Edit(path)`), and for `doarakko-config:` references that point at nothing. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
 
 ## External setup
 
@@ -92,6 +92,7 @@ None of this can be inferred from the code.
 
 - **codex** — run `codex login`; without it every review fails with a 401. PR review additionally needs the repository registered at <https://chatgpt.com/codex/settings/code-review>. When codex is unusable the review falls back to Claude alone and pauses codex for 6 hours; `cat /tmp/claude/codex-review-cooldown` shows why. Signing in through `CODEX_API_KEY` / `CODEX_ACCESS_TOKEN` / `OPENAI_API_KEY` counts as signed in but leaves no `~/.codex/auth.json` to refresh, so `codex login` does not end that wait — delete the marker instead.
 - **gh** — 2.88.0 or newer to request `@copilot`, 2.99.0 or newer for `--attach` (E2E media on PRs). `--attach` exists only on `gh pr create`, not on `gh pr edit` or `gh pr comment`, so media cannot be added after the PR opens, and it cannot be combined with `--dry-run`.
+- **Copilot review on personal repositories** — `/pr-create` requests `@copilot` only when `gh repo view --json isInOrganization` reports an organization-owned repository, and skips the request when the owner is a personal account or the check fails. A review is billed to the seat of the account that requested it, so on a company Copilot Business or Enterprise seat a personal-repository review spends the company's AI credits and leaves the repository and user name in its usage report.
 - **Copilot review effort** — cannot be passed from the CLI. Set it per repository under Settings > Copilot > Code review > Review effort level, or enable a ruleset with "Automatically request Copilot code review".
 - **Artifacts** — `/pr-review`, `/review-diff`, and `/plan-view` publish their output as an HTML page on claude.ai through the built-in `Artifact` tool.
 

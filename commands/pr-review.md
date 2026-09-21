@@ -14,14 +14,13 @@ allowed-tools: Skill, Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks 
 ```
 
 ## PR情報（自動取得）
-- PR詳細: !`gh pr view $0 --json title,body,url,labels,milestone 2>/dev/null || gh pr view --json title,body,url,labels,milestone`
-- PR差分: !`gh pr diff $0 2>/dev/null || gh pr diff`
+- PR詳細: !`gh pr view $0 --json title,body,url,labels,milestone,additions,deletions,changedFiles 2>/dev/null || gh pr view --json title,body,url,labels,milestone,additions,deletions,changedFiles`
 - 変更ファイル一覧: !`gh pr diff $0 --name-only 2>/dev/null || gh pr diff --name-only`
 - CIステータス: !`gh pr checks $0 2>/dev/null || gh pr checks 2>/dev/null || echo "No CI checks"`
 
 ## 手順
-1. 上記の自動取得データを元にレビュー
-2. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）
+1. 上記で変更の広がりを把握する。差分の中身はSubagentが取得するので、ここでは全文を読まない
+2. `code-reviewer` Subagentでレビュー（観点はSubagentのSkill定義に従う）。対象のPR番号を渡す
 3. レビュー結果を統合して表示
 4. `doarakko-config:report-artifact` スキルを種別`pr-review`で起動し、その手順に従ってHTMLページを公開する
 5. `doarakko-config:review-followup` スキルを起動し、その手順に従って修正に入るかを確認する

@@ -42,7 +42,7 @@ npm packages land under the node version asdf selects, so re-run `aii` after swi
 | `/pr-review` | Review a PR in detail |
 | `/ci-fix` | Fix CI failures on the current branch's PR |
 | `/review-diff` | Review uncommitted local changes |
-| `/auto-review` | Switch how far the Stop hook goes in this session — `off`, `review`, `fix`, or `auto`. User-invoked only |
+| `/auto-review-mode` | Switch how far the Stop hook goes in this session — `off`, `review`, `fix`, or `auto`. User-invoked only |
 | `/commit` | Commit and push — user-invoked only |
 | `/decision-save` | Write the session's technical decisions to a file |
 | `/plan-view` | Publish a plan file as an HTML page you can open in a browser |
@@ -90,7 +90,7 @@ Wired in `.claude-plugin/plugin.json`. The reviewed point is recorded per sessio
 How far the `Stop` hook goes is decided per turn, in this order:
 
 1. Permission mode `plan` — do nothing. Nothing is being edited, and a review request would only get in the way of the plan
-2. Whatever `/auto-review` wrote for this session
+2. Whatever `/auto-review-mode` wrote for this session
 3. Otherwise the permission mode decides
 
 | Permission mode | Default behaviour |
@@ -101,7 +101,7 @@ How far the `Stop` hook goes is decided per turn, in this order:
 
 An unreadable setting is ignored rather than obeyed, and an unknown permission mode reviews and fixes rather than falling silent — staying quiet would leave unreviewed changes that nobody hears about again. A missing `permission_mode` lands in the same row so that a build which stops sending the field behaves exactly as this hook did before the setting existed. `off` and `plan` leave the reviewed point unrecorded, so whatever changed while the hook was held back is still waiting when you switch back.
 
-The setting lives in `/tmp/claude/auto-review-mode/<session>` (`CLAUDE_AUTO_REVIEW_MODE_DIR` moves it, which is how the test suite keeps off the real one) and is scoped to one session — a new session always starts from the default, so you cannot forget that you turned it off. `/auto-review` is user-invoked only: the hook exists to stop unreviewed changes from slipping through, so the side being reviewed does not get to switch it off.
+The setting lives in `/tmp/claude/auto-review-mode/<session>` (`CLAUDE_AUTO_REVIEW_MODE_DIR` moves it, which is how the test suite keeps off the real one) and is scoped to one session — a new session always starts from the default, so you cannot forget that you turned it off. `/auto-review-mode` is user-invoked only: the hook exists to stop unreviewed changes from slipping through, so the side being reviewed does not get to switch it off.
 
 ## External setup
 

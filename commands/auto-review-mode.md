@@ -11,7 +11,7 @@ allowed-tools: Bash(mkdir *), Bash(printf *), Bash(cat *), Bash(rm *), Bash(find
 
 ## 使用方法
 ```
-/auto-review [off|review|fix|auto]
+/auto-review-mode [off|review|fix|auto]
 ```
 
 | 指定 | 挙動 |

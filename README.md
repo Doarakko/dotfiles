@@ -103,6 +103,8 @@ An unreadable setting is ignored rather than obeyed, and an unknown permission m
 
 The setting lives in `/tmp/claude/auto-review-mode/<session>` (`CLAUDE_AUTO_REVIEW_MODE_DIR` moves it, which is how the test suite keeps off the real one) and is scoped to one session — a new session always starts from the default, so you cannot forget that you turned it off. `/auto-review-mode` is user-invoked only: the hook exists to stop unreviewed changes from slipping through, so the side being reviewed does not get to switch it off.
 
+Turning it `off` does not take reviewing away. `/review-diff` is a command, not the hook, so it never reads the setting — it starts the same two reviewers over the same points, and adds a lint run, an HTML page, and a prompt asking which findings to fix. What it does not inherit is the scoping: it always reads the whole uncommitted diff unless you name a path, and it leaves the reviewed point untouched, so ending a turn right after one sends the same diff through the hook a second time. Switch to `off` first when you want to drive the review yourself. For a pull request, `/pr-review` is the one to reach for.
+
 ## External setup
 
 None of this can be inferred from the code.

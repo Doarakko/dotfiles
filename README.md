@@ -42,6 +42,7 @@ npm packages land under the node version asdf selects, so re-run `aii` after swi
 | `/pr-review` | Review a PR in detail |
 | `/ci-fix` | Fix CI failures on the current branch's PR |
 | `/review-diff` | Review uncommitted local changes |
+| `/auto-review-mode` | Switch how far the Stop hook goes in this session — `off`, `review`, `fix`, or `auto`. User-invoked only |
 | `/commit` | Commit and push — user-invoked only |
 | `/decision-save` | Write the session's technical decisions to a file |
 | `/plan-view` | Publish a plan file as an HTML page you can open in a browser |
@@ -85,6 +86,24 @@ Defined in `agents/`.
 | `Stop` | Reviews uncommitted changes before the turn ends, scoping every review after the first to the files that changed since the last one (`hooks/auto-review.sh`) |
 
 Wired in `.claude-plugin/plugin.json`. The reviewed point is recorded per session under the temporary directory, never in git — your index and your partial staging stay untouched. Whenever that record cannot be trusted (first review of a session, a corrupted or missing record, a path that will not fit on one line, more changed files than `CLAUDE_AUTO_REVIEW_MAX_SCOPE_FILES`, default 40) the review falls back to the whole uncommitted diff rather than silently dropping anything. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. The same workflow runs `scripts/validate-definitions.sh`, which checks every command, skill, and agent for a closed frontmatter block, for permission specifiers Claude Code accepts but never consults (`Write(path)`, `Glob(path)`, and friends — use `Edit(path)`), and for `doarakko-config:` references that point at nothing. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
+
+How far the `Stop` hook goes is decided per turn, in this order:
+
+1. Permission mode `plan` — do nothing. Nothing is being edited, and a review request would only get in the way of the plan
+2. Whatever `/auto-review-mode` wrote for this session
+3. Otherwise the permission mode decides
+
+| Permission mode | Default behaviour |
+| --- | --- |
+| `default` (shown as Manual) | Review only — findings are listed, nothing is edited |
+| `acceptEdits` / `auto` / `dontAsk` / `bypassPermissions` | Review, then fix Critical and High findings in the same turn |
+| An unknown value, or no value at all | Review and fix |
+
+An unreadable setting is ignored rather than obeyed, and an unknown permission mode reviews and fixes rather than falling silent — staying quiet would leave unreviewed changes that nobody hears about again. A missing `permission_mode` lands in the same row so that a build which stops sending the field behaves exactly as this hook did before the setting existed. `off` and `plan` leave the reviewed point unrecorded, so whatever changed while the hook was held back is still waiting when you switch back.
+
+The setting lives in `/tmp/claude/auto-review-mode/<session>` (`CLAUDE_AUTO_REVIEW_MODE_DIR` moves it, which is how the test suite keeps off the real one) and is scoped to one session — a new session always starts from the default, so you cannot forget that you turned it off. `/auto-review-mode` is user-invoked only: the hook exists to stop unreviewed changes from slipping through, so the side being reviewed does not get to switch it off.
+
+Turning it `off` does not take reviewing away. `/review-diff` is a command, not the hook, so it never reads the setting — it starts the same two reviewers over the same points, and adds a lint run, an HTML page, and a prompt asking which findings to fix. What it does not inherit is the scoping: it always reads the whole uncommitted diff unless you name a path, and it leaves the reviewed point untouched, so ending a turn right after one sends the same diff through the hook a second time. Switch to `off` first when you want to drive the review yourself. For a pull request, `/pr-review` is the one to reach for.
 
 ## External setup
 

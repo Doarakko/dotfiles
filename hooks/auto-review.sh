@@ -10,16 +10,49 @@ INPUT=$(cat)
 
 TAB=$'\t'
 
+SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' | tr -cd 'A-Za-z0-9._-')
+
+# 計画中は何もしない。編集そのものが起きないため、依頼を出しても計画の提示を邪魔するだけになる
+# 記録も残さない。残すと計画へ入る前からあった差分が、抜けたあと二度と対象にならない
+PERMISSION_MODE=$(printf '%s' "$INPUT" | jq -r '.permission_mode // empty')
+if [[ "$PERMISSION_MODE" == "plan" ]]; then
+  exit 0
+fi
+
+# どこまで求めるかの指定。セッション単位で、コマンドが書き hook が読む
+# 一時ディレクトリは両者が同じ値を見る保証が無いため、固定のパスを使う
+MODE_DIR="${CLAUDE_AUTO_REVIEW_MODE_DIR:-/tmp/claude/auto-review-mode}"
+AUTO_REVIEW_MODE=""
+if [[ -n "$SESSION_ID" && -f "${MODE_DIR}/${SESSION_ID}" ]]; then
+  AUTO_REVIEW_MODE=$(tr 'A-Z' 'a-z' <"${MODE_DIR}/${SESSION_ID}" 2>/dev/null | tr -cd 'a-z') ||
+    AUTO_REVIEW_MODE=""
+fi
+
+# 指定が無い、または読めないときは権限の状態へ合わせる
+# 読めない指定を黙る側へ倒すと、未レビューの差分が気づかれないまま残る
+# 知っている値だけを通す形にすると、値が増えたときや古い版で黙って全部止まる
+case "$AUTO_REVIEW_MODE" in
+off | review | fix) ;;
+*)
+  case "$PERMISSION_MODE" in
+  default) AUTO_REVIEW_MODE=review ;;
+  *) AUTO_REVIEW_MODE=fix ;;
+  esac
+  ;;
+esac
+
+# 止めている間の差分をレビュー済みとして記録しない
+# 記録すると、指定を戻してもその差分は二度と対象にならない
+if [[ "$AUTO_REVIEW_MODE" == "off" ]]; then
+  exit 0
+fi
+
 # セッションごとにレビュー済みの状態を記録する（リポジトリは汚さない）
 # 記録するのは変更のあるパスと、その時点の内容の目印
 # この記録は hook だけが読み書きするため一時ディレクトリでよい
 # レビュー範囲は記録ではなく依頼文へ載せて渡すので、外部と置き場所を共有しない
 STATE_DIR="${TMPDIR:-/tmp}/claude-auto-review"
-SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' | tr -cd 'A-Za-z0-9._-')
-if [[ -z "$SESSION_ID" ]]; then
-  SESSION_ID="unknown"
-fi
-STATE_FILE="${STATE_DIR}/${SESSION_ID}.reviewed"
+STATE_FILE="${STATE_DIR}/${SESSION_ID:-unknown}.reviewed"
 
 # hook 入力の作業ディレクトリへ移動（取得できなければ現在地のまま）
 HOOK_CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty')
@@ -247,6 +280,18 @@ fi
 # 途中で落ちた場合にレビュー済みとみなされ、この差分が二度と対象にならないのを避けるため
 record_state
 
+# 修正まで求めるかどうかで、レビューのあとの指示だけを差し替える
+# レビュアーの起動と指摘のマージ、範囲の提示は共通
+if [[ "$AUTO_REVIEW_MODE" == "fix" ]]; then
+  ACTION_STEPS="3. Critical / High の指摘はこのターン内で修正する
+4. Medium / Low は修正せず、最終応答に一覧として提示する（どのレビュアー由来かを併記する）
+レビューと修正が終わったらそのまま完了してよい。"
+else
+  # 重大度で扱いを分けると、高いものだけ直す動きに倒れる
+  ACTION_STEPS="3. どの重大度の指摘も修正しない。ファイルを書き換えず、最終応答に重大度順の一覧として提示する（どのレビュアー由来かを併記する）
+レビューが終わったらそのまま完了してよい。修正は指示があるまで行わない。"
+fi
+
 REVIEW_INSTRUCTION="未レビューの変更があります。完了する前に次を実行してください。
 
 ${SCOPE_SECTION}
@@ -254,9 +299,7 @@ ${SCOPE_SECTION}
 1. 次のサブエージェントを 1 メッセージ内で同時に起動する。上のレビュー範囲をそのまま渡す
 ${REVIEWERS}
 2. 各レビュアーの指摘をマージし、同一箇所を指す重複指摘は 1 件にまとめる
-3. Critical / High の指摘はこのターン内で修正する
-4. Medium / Low は修正せず、最終応答に一覧として提示する（どのレビュアー由来かを併記する）
-レビューと修正が終わったらそのまま完了してよい。"
+${ACTION_STEPS}"
 
 jq -n --arg context "$REVIEW_INSTRUCTION" '{
   hookSpecificOutput: {

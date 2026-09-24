@@ -19,6 +19,8 @@ trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/bin" "$WORK/codex-home" "$WORK/repo"
 export CODEX_HOME="$WORK/codex-home"
 export CLAUDE_CODEX_COOLDOWN_FILE="$WORK/cooldown"
+# 実機の指定を読まないよう、置き場を作業ディレクトリへ向ける
+export CLAUDE_AUTO_REVIEW_MODE_DIR="$WORK/mode"
 # 既定値と違う長さにする。同じ値だと hook が変数を読めていなくてもテストが通ってしまう
 export CLAUDE_CODEX_COOLDOWN_SECONDS=1800
 # 実機に入っている codex を経路から外す
@@ -121,7 +123,9 @@ judge() {
   local output status
   output=$(jq -n --arg s "${SESSION_OVERRIDE:-auto-review-test-${CASE}}" --arg c "${CWD_OVERRIDE:-$WORK/repo}" \
     --argjson active "${STOP_HOOK_ACTIVE:-false}" \
-    '{session_id:$s,cwd:$c,stop_hook_active:$active}' | run_hook 2>/dev/null)
+    --arg pm "${PERMISSION_MODE_OVERRIDE:-}" \
+    '{session_id:$s,cwd:$c,stop_hook_active:$active}
+      + (if $pm == "" then {} else {permission_mode:$pm} end)' | run_hook 2>/dev/null)
   status=$?
   # 途中で落ちたのか、意図して黙っているのかを取り違えないようにする
   if [[ "$status" -ne 0 ]]; then
@@ -147,7 +151,9 @@ context_for() {
   local raw status
   raw=$(jq -n --arg s "$1" --arg c "${CWD_OVERRIDE:-$WORK/repo}" \
     --argjson active "${STOP_HOOK_ACTIVE:-false}" \
-    '{session_id:$s,cwd:$c,stop_hook_active:$active}' | run_hook 2>/dev/null)
+    --arg pm "${PERMISSION_MODE_OVERRIDE:-}" \
+    '{session_id:$s,cwd:$c,stop_hook_active:$active}
+      + (if $pm == "" then {} else {permission_mode:$pm} end)' | run_hook 2>/dev/null)
   status=$?
   # 途中で落ちたのか、意図して黙っているのかを取り違えないようにする
   [[ "$status" -ne 0 ]] && return "$status"
@@ -179,6 +185,36 @@ scope_for() {
     printf '%s' "$context" | sed -n 's/^   - \(.*\)$/\1/p' |
       grep -v '^doarakko-config:' | sort | tr '\n' ',' | sed 's/,$//'
   fi
+}
+
+# 依頼文が修正まで求めているかを見分ける
+mode_for() {
+  local context status
+  context=$(context_for "$1")
+  status=$?
+  if [[ "$status" -ne 0 ]]; then
+    printf 'error'
+    return
+  fi
+  if [[ -z "$context" ]]; then
+    printf 'off'
+  elif printf '%s' "$context" | grep -q 'このターン内で修正する'; then
+    printf 'fix'
+  elif printf '%s' "$context" | grep -q 'どの重大度の指摘も修正しない'; then
+    printf 'review'
+  else
+    printf 'unknown'
+  fi
+}
+
+# 指定を書く。コマンドが書くのと同じ場所・同じ形
+set_mode_for() {
+  mkdir -p "$CLAUDE_AUTO_REVIEW_MODE_DIR"
+  printf '%s\n' "$2" >"${CLAUDE_AUTO_REVIEW_MODE_DIR}/$1"
+}
+
+clear_mode_for() {
+  rm -f "${CLAUDE_AUTO_REVIEW_MODE_DIR}/$1"
 }
 
 expect() {
@@ -457,6 +493,75 @@ check 'コミット無しの一度目' "$(scope_for scope-fresh)" all
 printf 'more\n' >"$WORK/fresh/staged.txt"
 check 'コミット無しでもステージ済みを追える' "$(scope_for scope-fresh)" staged.txt
 unset CWD_OVERRIDE
+
+# ここから実行の有無の切り替え。差分は残したまま、指定と権限の状態だけを変える
+rm -f "$CLAUDE_CODEX_COOLDOWN_FILE"
+
+# 指定が無ければ権限の状態へ合わせる。手動で見ている間は修正まで求めない
+export PERMISSION_MODE_OVERRIDE=default
+check '手動ならレビューだけ' "$(mode_for mode-default)" review
+for edit_mode in acceptEdits auto dontAsk bypassPermissions; do
+  export PERMISSION_MODE_OVERRIDE="$edit_mode"
+  check "編集を許していれば修正まで（${edit_mode}）" "$(mode_for "mode-pm-${edit_mode}")" fix
+done
+
+# 知らない値で黙らない。黙るとその差分は誰にも見られない
+export PERMISSION_MODE_OVERRIDE=unknown-future
+check '知らない権限の状態' "$(mode_for mode-pm-unknown)" fix
+unset PERMISSION_MODE_OVERRIDE
+check '権限の状態が届かない' "$(mode_for mode-pm-missing)" fix
+
+# 指定があれば権限の状態より優先する
+export PERMISSION_MODE_OVERRIDE=bypassPermissions
+set_mode_for mode-review review
+check '指定はレビューだけ' "$(mode_for mode-review)" review
+export PERMISSION_MODE_OVERRIDE=default
+set_mode_for mode-fix fix
+check '指定は修正まで' "$(mode_for mode-fix)" fix
+unset PERMISSION_MODE_OVERRIDE
+
+# 大文字で書かれていても同じものとして扱う
+set_mode_for mode-upper OFF
+check '大文字の指定' "$(mode_for mode-upper)" off
+
+# 読めない指定は無かったことにして、権限の状態へ倒す
+set_mode_for mode-broken 'off; rm -rf /'
+export PERMISSION_MODE_OVERRIDE=default
+check '読めない指定' "$(mode_for mode-broken)" review
+unset PERMISSION_MODE_OVERRIDE
+
+# レビューだけの指定でも、絞り込みと codex の判定は従来どおり働く
+set_mode_for mode-review-scope review
+check 'レビューだけでも範囲を絞る前' "$(scope_for mode-review-scope)" all
+printf 'narrow\n' >"$WORK/repo/dirty.txt"
+check 'レビューだけでも範囲を絞る' "$(scope_for mode-review-scope)" dirty.txt
+SESSION_OVERRIDE=mode-review-codex
+set_mode_for "$SESSION_OVERRIDE" review
+export SESSION_OVERRIDE
+expect both 'レビューだけでも codex を並べる'
+unset SESSION_OVERRIDE
+
+# 何もしない指定では黙る。止めた回を記録すると、戻してもその差分は二度と対象にならない
+set_mode_for mode-off off
+check '何もしない' "$(mode_for mode-off)" off
+if [[ -f "$WORK/claude-auto-review/mode-off.reviewed" ]]; then
+  printf 'FAIL  止めた回がレビュー済みとして記録されている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+clear_mode_for mode-off
+check '止めた回の差分は戻したら対象になる' "$(scope_for mode-off)" all
+
+# 計画中は指定より優先して何もしない。記録も残さない
+set_mode_for mode-plan fix
+export PERMISSION_MODE_OVERRIDE=plan
+check '計画中' "$(mode_for mode-plan)" off
+if [[ -f "$WORK/claude-auto-review/mode-plan.reviewed" ]]; then
+  printf 'FAIL  計画中の回がレビュー済みとして記録されている\n'
+  FAILURES=$((FAILURES + 1))
+fi
+unset PERMISSION_MODE_OVERRIDE
+check '計画中の差分は抜けたら対象になる' "$(scope_for mode-plan)" all
+clear_mode_for mode-plan
 
 # 差分が無ければ何も言わない
 # ステージしたものが残っているので、作業ツリーと索引の両方をコミット時点へ戻す

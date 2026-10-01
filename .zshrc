@@ -2,6 +2,11 @@ export PS1="[%n] %~ $"
 
 alias code="code-insiders"
 
+# ~/src配下へ移動する。引数を渡すとその配下のディレクトリへ直接移動する
+cds() {
+  cd "$HOME/src/${1:-}"
+}
+
 # git worktreeで新しいブランチを作成し、そのディレクトリに移動する
 gwt() {
   local branch_name="$1"

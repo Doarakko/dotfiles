@@ -2,8 +2,13 @@ export PS1="[%n] %~ $"
 
 alias code="code-insiders"
 
+# ~/src配下へ移動する。引数を渡すとその配下のディレクトリへ直接移動する
+cds() {
+  cd "$HOME/src/${1:-}"
+}
+
 # git worktreeで新しいブランチを作成し、そのディレクトリに移動する
-gwt() {
+gw() {
   local branch_name="$1"
   local repo_root
   local worktree_base
@@ -108,7 +113,7 @@ gb-clean() {
 }
 
 # 現在のworktreeからメインのworktreeに移動する
-gwt-root() {
+gwr() {
   local git_common_dir
   local main_worktree
 

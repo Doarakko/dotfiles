@@ -1,10 +1,11 @@
 ---
+name: commit
 description: 現在の変更をコミットし、リモートにプッシュする
 disable-model-invocation: true
 allowed-tools: Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *)
 ---
 
-# コミットコマンド
+# コミット手順
 
 現在の変更をコミットし、リモートにプッシュする。
 

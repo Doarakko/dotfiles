@@ -1,6 +1,6 @@
 {
   "name": "doarakko-config",
-  "description": "Productivity commands collection for Claude Code",
+  "description": "Productivity skills collection for Claude Code",
   "version": "1.1.0",
   "owner": {
     "name": "Doarakko",
@@ -10,7 +10,7 @@
     {
       "name": "doarakko-config",
       "source": "./",
-      "description": "Commands, skills, agents, and hooks for branch management, commit splitting, PR workflows, code review, CI/CD automation, and test creation"
+      "description": "Skills, agents, and hooks for branch management, commit splitting, PR workflows, code review, CI/CD automation, and test creation"
     }
   ]
 }

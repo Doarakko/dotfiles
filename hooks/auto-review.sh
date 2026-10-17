@@ -19,7 +19,7 @@ if [[ "$PERMISSION_MODE" == "plan" ]]; then
   exit 0
 fi
 
-# どこまで求めるかの指定。セッション単位で、コマンドが書き hook が読む
+# どこまで求めるかの指定。セッション単位で、スキルが書き hook が読む
 # 一時ディレクトリは両者が同じ値を見る保証が無いため、固定のパスを使う
 MODE_DIR="${CLAUDE_AUTO_REVIEW_MODE_DIR:-/tmp/claude/auto-review-mode}"
 AUTO_REVIEW_MODE=""

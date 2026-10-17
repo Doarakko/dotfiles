@@ -1,10 +1,11 @@
 ---
+name: review-diff
 description: 現在のローカル変更をレビューする
 argument-hint: [対象ファイル・ディレクトリ]
 allowed-tools: Skill, Bash(git status *), Bash(git diff *), Bash(codex exec *), Bash(npm run lint *), Bash(npx eslint *), Bash(ruff check *), Bash(golangci-lint run *), Bash(git rev-parse *), Bash(mkdir *), Read, Edit(//tmp/claude/report/**), Edit(//private/tmp/claude/report/**), Grep, Glob
 ---
 
-# コード差分レビューコマンド
+# コード差分レビュー手順
 
 現在のローカル変更をレビューする。
 

@@ -1,6 +1,6 @@
 # dotfiles
 
-Shell configuration plus a Claude Code plugin (`doarakko-config`) holding commands, skills, agents, and hooks.
+Shell configuration plus a Claude Code plugin (`doarakko-config`) holding skills, agents, and hooks.
 
 ## Setup
 
@@ -33,7 +33,11 @@ Restart Claude Code after `aiu`. It replaces plugins and can replace the `claude
 
 npm packages land under the node version asdf selects, so re-run `aii` after switching node.
 
-## Commands
+## Skills
+
+All of them live in `skills/<name>/SKILL.md`.
+
+### Workflows you start
 
 | | |
 | --- | --- |
@@ -44,12 +48,10 @@ npm packages land under the node version asdf selects, so re-run `aii` after swi
 | `/review-diff` | Review uncommitted local changes |
 | `/auto-review-mode` | Switch how far the Stop hook goes in this session — `off`, `review`, `fix`, or `auto`. User-invoked only |
 | `/commit` | Commit and push — user-invoked only |
-| `/decision-save` | Write the session's technical decisions to a file |
-| `/plan-view` | Publish a plan file as an HTML page you can open in a browser |
 
-Defined in `commands/`.
+### Used while you work
 
-## Skills
+Claude picks these up on its own when the task calls for them, and the workflows above invoke several of them.
 
 | | |
 | --- | --- |
@@ -62,12 +64,11 @@ Defined in `commands/`.
 | `pr-compliance-review` | Check an implementation against the PR description and linked issues |
 | `test-implementation` | Add tests in the same turn as the implementation |
 | `docs-update` | Update documentation to match code changes |
+| `decision-save` | Record a technical decision — options compared, what was chosen, and why — once it is settled. Writes into the repository's existing decision records — the location its docs name, `.adr-dir`, or a directory such as `docs/adr/` — following their numbering and template, and falls back to `docs/decisions/` |
 | `dependabot-setting` | Generate `.github/dependabot.yml` and pin mutable references |
 | `project-setup` | Audit dependency automation, runtime pinning, and CI/CD — build, lint, test, deploy, and per-PR preview. Triggers on an unfamiliar project, a newly created repository, and the first push or PR in a repository |
-| `review-followup` | Shared post-review confirmation flow — invoked by the review commands, not by you |
-| `report-artifact` | Publish a review result or a plan as an HTML page on claude.ai |
-
-Defined in `skills/<name>/SKILL.md`.
+| `review-followup` | Shared post-review confirmation flow — invoked by the review skills, not by you |
+| `report-artifact` | Publish a review result as an HTML page on claude.ai |
 
 ## Agents
 
@@ -88,7 +89,7 @@ Defined in `agents/`.
 | `PostToolUse` | Runs `make lint` after edits when the Makefile has that target |
 | `Stop` | Reviews uncommitted changes before the turn ends, scoping every review after the first to the files that changed since the last one (`hooks/auto-review.sh`) |
 
-Wired in `.claude-plugin/plugin.json`. The reviewed point is recorded per session under the temporary directory, never in git — your index and your partial staging stay untouched. Whenever that record cannot be trusted (first review of a session, a corrupted or missing record, a path that will not fit on one line, more changed files than `CLAUDE_AUTO_REVIEW_MAX_SCOPE_FILES`, default 40) the review falls back to the whole uncommitted diff rather than silently dropping anything. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. The same workflow runs `scripts/validate-definitions.sh`, which checks every command, skill, and agent for a closed frontmatter block, for permission specifiers Claude Code accepts but never consults (`Write(path)`, `Glob(path)`, and friends — use `Edit(path)`), and for `doarakko-config:` references that point at nothing. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
+Wired in `.claude-plugin/plugin.json`. The reviewed point is recorded per session under the temporary directory, never in git — your index and your partial staging stay untouched. Whenever that record cannot be trusted (first review of a session, a corrupted or missing record, a path that will not fit on one line, more changed files than `CLAUDE_AUTO_REVIEW_MAX_SCOPE_FILES`, default 40) the review falls back to the whole uncommitted diff rather than silently dropping anything. The decision tables live in `hooks/*.test.sh`, which `.github/workflows/test.yml` runs on pushes to master and on pull requests — read those for the exact behaviour. The same workflow runs `scripts/validate-definitions.sh`, which checks every skill and agent for a closed frontmatter block, for permission specifiers Claude Code accepts but never consults (`Write(path)`, `Glob(path)`, and friends — use `Edit(path)`), and for `doarakko-config:` references that point at nothing. Set `"disableAllHooks": true` in your settings to turn all hooks off, or remove the individual entry from `plugin.json`.
 
 How far the `Stop` hook goes is decided per turn, in this order:
 
@@ -106,7 +107,7 @@ An unreadable setting is ignored rather than obeyed, and an unknown permission m
 
 The setting lives in `/tmp/claude/auto-review-mode/<session>` (`CLAUDE_AUTO_REVIEW_MODE_DIR` moves it, which is how the test suite keeps off the real one) and is scoped to one session — a new session always starts from the default, so you cannot forget that you turned it off. `/auto-review-mode` is user-invoked only: the hook exists to stop unreviewed changes from slipping through, so the side being reviewed does not get to switch it off.
 
-Turning it `off` does not take reviewing away. `/review-diff` is a command, not the hook, so it never reads the setting — it reviews the same points more deeply, and adds a lint run, an HTML page, and a prompt asking which findings to fix. What it does not inherit is the scoping: it always reads the whole uncommitted diff unless you name a path, and it leaves the reviewed point untouched, so ending a turn right after one sends the same diff through the hook a second time. Switch to `off` first when you want to drive the review yourself. For a pull request, `/pr-review` is the one to reach for.
+Turning it `off` does not take reviewing away. `/review-diff` is a skill, not the hook, so it never reads the setting — it reviews the same points more deeply, and adds a lint run, an HTML page, and a prompt asking which findings to fix. What it does not inherit is the scoping: it always reads the whole uncommitted diff unless you name a path, and it leaves the reviewed point untouched, so ending a turn right after one sends the same diff through the hook a second time. Switch to `off` first when you want to drive the review yourself. For a pull request, `/pr-review` is the one to reach for.
 
 ## Manual review
 
@@ -114,7 +115,7 @@ Turning it `off` does not take reviewing away. `/review-diff` is a command, not 
 
 | Group | Points | Runs when |
 | --- | --- | --- |
-| Safety | `security`, `errors` | Code changed — scripts, config, CI definitions, and Markdown that Claude Code runs (command, skill, and agent definitions) count as code |
+| Safety | `security`, `errors` | Code changed — scripts, config, CI definitions, and Markdown that Claude Code runs (skill and agent definitions) count as code |
 | Readability | `quality`, `comments`, `guidelines` | Always. A docs-only change gets `guidelines` alone |
 | Tests | `test` | Code or tests changed |
 | Requirements | `pr-compliance` | Always, `/pr-review` only |
@@ -132,11 +133,11 @@ None of this can be inferred from the code.
 - **gh** — 2.88.0 or newer to request `@copilot`, 2.99.0 or newer for `--attach` (E2E media on PRs). `--attach` exists only on `gh pr create`, not on `gh pr edit` or `gh pr comment`, so media cannot be added after the PR opens, and it cannot be combined with `--dry-run`.
 - **Copilot review on personal repositories** — `/pr-create` requests `@copilot` only when `gh repo view --json isInOrganization` reports an organization-owned repository, and skips the request when the owner is a personal account or the check fails. A review is billed to the seat of the account that requested it, so on a company Copilot Business or Enterprise seat a personal-repository review spends the company's AI credits and leaves the repository and user name in its usage report.
 - **Copilot review effort** — cannot be passed from the CLI. Set it per repository under Settings > Copilot > Code review > Review effort level, or enable a ruleset with "Automatically request Copilot code review".
-- **Artifacts** — `/pr-review`, `/review-diff`, and `/plan-view` publish their output as an HTML page on claude.ai through the built-in `Artifact` tool.
+- **Artifacts** — `/pr-review` and `/review-diff` publish their output as an HTML page on claude.ai through the built-in `Artifact` tool.
 
-  Publishing needs a Pro, Max, Team, or Enterprise plan, a session signed in with `/login`, and the Anthropic API as the model provider. Bedrock, Vertex, and Foundry sessions cannot publish; neither can an organization with CMEK, HIPAA, or Zero Data Retention enabled; and on Enterprise an Owner has to enable artifacts for the organization. Where publishing is unavailable the commands keep the local HTML file under `/tmp/claude/report` and print the path instead.
+  Publishing needs a Pro, Max, Team, or Enterprise plan, a session signed in with `/login`, and the Anthropic API as the model provider. Bedrock, Vertex, and Foundry sessions cannot publish; neither can an organization with CMEK, HIPAA, or Zero Data Retention enabled; and on Enterprise an Owner has to enable artifacts for the organization. Where publishing is unavailable the skills keep the local HTML file under `/tmp/claude/report` and print the path instead.
 
-  A published page is stored on Anthropic infrastructure, so review pages carry your diff — keep secrets out of them. The page is invisible to other members until you share it from its header, but not invisible to your organization: on Team and Enterprise, Owners can list and read artifact content through the Compliance API, and every publish, share, and delete lands in the org audit log as a `claude_artifact_*` event. The commands deliberately leave `Artifact` out of their `allowed-tools`, so a page asks before it is first published. That prompt is the only one you get: once you approve a page, later republishes of it go through without asking, and in auto mode a classifier approves even the first publish.
+  A published page is stored on Anthropic infrastructure, so review pages carry your diff — keep secrets out of them. The page is invisible to other members until you share it from its header, but not invisible to your organization: on Team and Enterprise, Owners can list and read artifact content through the Compliance API, and every publish, share, and delete lands in the org audit log as a `claude_artifact_*` event. The skills deliberately leave `Artifact` out of their `allowed-tools`, so a page asks before it is first published. That prompt is the only one you get: once you approve a page, later republishes of it go through without asking, and in auto mode a classifier approves even the first publish.
 
   Set `CLAUDE_CODE_ARTIFACT_AUTO_OPEN=0` to stop the browser opening on publish, `"enableArtifact": false` or `CLAUDE_CODE_DISABLE_ARTIFACT=1` to turn the whole thing off, or put `Artifact` in `permissions.deny`.
 - **E2E in other repositories** — needs `Bash(playwright-cli *)` and `Bash(curl -s -o /dev/null *)` allowed there. `.claude/settings.json` here is this repository's own project settings and is not distributed with the plugin.

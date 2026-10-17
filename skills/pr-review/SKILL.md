@@ -1,10 +1,11 @@
 ---
+name: pr-review
 description: PRを詳細にレビューし、改善提案を行う
 argument-hint: <PR番号またはURL>
 allowed-tools: Skill, Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api *), Bash(gh issue view *), Bash(git rev-parse *), Bash(mkdir *), Read, Edit(//tmp/claude/report/**), Edit(//private/tmp/claude/report/**), Grep, Glob, WebFetch
 ---
 
-# PRレビューコマンド
+# PRレビュー手順
 
 指定されたPRを詳細にレビューし、改善提案を行う。
 

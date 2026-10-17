@@ -1,12 +1,12 @@
 ---
 name: report-artifact
-description: レビュー結果やプランをHTMLページとして公開し、ブラウザで見られるようにするときに使用
+description: レビュー結果をHTMLページとして公開し、ブラウザで見られるようにするときに使用
 allowed-tools: Skill, Edit(//tmp/claude/report/**), Edit(//private/tmp/claude/report/**), Read, Bash(mkdir *), Bash(git rev-parse *)
 ---
 
 # HTMLページ公開手順
 
-レビュー結果やプランを、ターミナルのmarkdownではなくHTMLページとして公開する。公開先はArtifact（claude.ai上の非公開URL）で、ブラウザで開き、必要ならページ上のShareから共有できる。
+レビュー結果を、ターミナルのmarkdownではなくHTMLページとして公開する。公開先はArtifact（claude.ai上の非公開URL）で、ブラウザで開き、必要ならページ上のShareから共有できる。
 
 ## 1. 種別を決める
 
@@ -16,7 +16,6 @@ allowed-tools: Skill, Edit(//tmp/claude/report/**), Edit(//private/tmp/claude/re
 | --- | --- |
 | `pr-review` | `/pr-review` |
 | `review-diff` | `/review-diff` |
-| `plan` | `/plan-view` |
 | `review` | 単体のレビュー系スキル（`vulnerability-review` / `silent-failure-review` / `test-review` / `comment-review` / `coding-style-guide-review` / `pr-compliance-review`）を使ったあと |
 
 どの種別もHTMLで書き出す。`.md`も公開できるが、その場合は題名がファイル名で固定され、体裁も選べない。
@@ -35,8 +34,6 @@ Claude Codeには`/artifact-pr-review`という組み込みのPRレビューペ�
 
 ## 3. ページを組み立てる
 
-### レビュー系（`pr-review` / `review-diff` / `review`）
-
 - **ヘッダー**: 対象（PR番号とURL、またはローカル差分の範囲）、ブランチ、レビュアーの内訳。実際に走ったものだけを並べる（`/pr-review`は`code-reviewer`の各グループと`finding-verifier`、`/review-diff`はそれに加えて`codex-reviewer`と自動チェックツール）
 - **サマリー**: Critical / High / Medium / Low の件数
 - **指摘一覧**: 重大度バッジ、`file:line`、由来ラベル（codex由来は`[codex]`）、反証を通ったか未検証か、説明、改善提案。該当diffの抜粋は`<details>`で畳む
@@ -46,15 +43,6 @@ Claude Codeには`/artifact-pr-review`という組み込みのPRレビューペ�
 
 指摘の並びは重大度順。重複をまとめた指摘は、まとめた旨と由来を両方載せる。
 
-### プラン（`plan`）
-
-- **ヘッダー**: プラン名、元ファイル名、更新日時。`~/.claude/plans`配下のプランはファイル名だけを出す。絶対パスにはユーザー名が入る
-- **本文**: プランの見出し構造をそのまま残す。長いプランは冒頭に見出しへのアンカーリンクを置く
-- **実行手順・検証手順**: チェックリストとして読める形にする
-- コードブロックとパスは等幅で、横スクロールは各ブロック内に閉じ込める
-
-内容は書き換えない。見出し・箇条書き・コードブロックの区別をHTMLの階層へ移すだけにする。
-
 ## 4. ファイルを書き出す
 
 `mkdir -p /tmp/claude/report` を先に実行し、`/tmp/claude/report/` の下に書く。ファイル名は種別ではなく**レビュー対象**で決める。
@@ -63,7 +51,6 @@ Claude Codeには`/artifact-pr-review`という組み込みのPRレビューペ�
 | --- | --- |
 | `pr-review` | `<repo>-pr<PR番号>-review.html` |
 | `review-diff` | `<repo>-<branch>-review-diff.html` |
-| `plan` | `plan-<拡張子を除いたプランファイル名>.html` |
 | `review` | `<repo>-<branch>-<観点>-review.html`（観点は`security` / `errors` / `test` / `quality` / `comments` / `guidelines` / `pr-compliance`） |
 
 `<repo>`と`<branch>`は次で取る。ほかのコマンドを使うと`allowed-tools`に無く、許可プロンプトが出る。
@@ -81,9 +68,9 @@ Claude Codeには`/artifact-pr-review`という組み込みのPRレビューペ�
 
 `Artifact`にファイルパスを渡す。
 
-- **題名はHTMLの`<title>`タグで決める**。短い名詞句にし、`PR 123 Review`、`OAuth Migration Plan` のように対象を特定できる名前にする。説明をコロンやダッシュで足さない。`title`パラメータは`<title>`が無いときだけ使われ、タグを上書きしない
+- **題名はHTMLの`<title>`タグで決める**。短い名詞句にし、`PR 123 Review`、`dotfiles feature-x Review Diff` のように対象を特定できる名前にする。説明をコロンやダッシュで足さない。`title`パラメータは`<title>`が無いときだけ使われ、タグを上書きしない
 - `description`: 1文。ギャラリーのカードに出る
-- `favicon`: レビュー系は🔍、プランは🗺️
+- `favicon`: 🔍
 - `<title>`と`favicon`は、同じ対象を更新する限り変えない
 
 **`Artifact`を`allowed-tools`へ足して事前承認しないこと。** 差分をAnthropic側へ上げる操作なので、何を上げるかをユーザーが見て判断する余地を残す。
@@ -97,7 +84,7 @@ Claude Codeには`/artifact-pr-review`という組み込みのPRレビューペ�
 Artifactが使えないセッション（`enableArtifact: false`、APIキーやゲートウェイ経由の認証、Bedrock / Vertex / Foundry、組織側で無効）では公開に失敗する。このとき、
 
 - 手順4で書き出したファイルはそのまま残っているので、作り直さずにパスを提示し、`open <パス>` で見られることを案内する
-- レビューやプラン表示そのものは止めない。呼び出し元の残りの手順（`review-followup`等）へそのまま進む
+- レビューそのものは止めない。呼び出し元の残りの手順（`review-followup`等）へそのまま進む
 - ユーザーが公開を断った場合も同じ扱いにする
 
 ## 7. 公開する内容の制約

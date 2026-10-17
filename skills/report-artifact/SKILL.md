@@ -17,7 +17,7 @@ allowed-tools: Skill, Edit(//tmp/claude/report/**), Edit(//private/tmp/claude/re
 | `pr-review` | `/pr-review` |
 | `review-diff` | `/review-diff` |
 | `plan` | `/plan-view` |
-| `review` | 単体のレビュー系スキル（`security-review` / `test-review` / `coding-style-guide-review` / `pr-compliance-review`）を使ったあと |
+| `review` | 単体のレビュー系スキル（`vulnerability-review` / `silent-failure-review` / `test-review` / `comment-review` / `coding-style-guide-review` / `pr-compliance-review`）を使ったあと |
 
 どの種別もHTMLで書き出す。`.md`も公開できるが、その場合は題名がファイル名で固定され、体裁も選べない。
 
@@ -37,9 +37,10 @@ Claude Codeには`/artifact-pr-review`という組み込みのPRレビューペ�
 
 ### レビュー系（`pr-review` / `review-diff` / `review`）
 
-- **ヘッダー**: 対象（PR番号とURL、またはローカル差分の範囲）、ブランチ、レビュアーの内訳。実際に走ったものだけを並べる（`/pr-review`は`code-reviewer`のみ、`/review-diff`は`code-reviewer`と`codex-reviewer`と自動チェックツール）
+- **ヘッダー**: 対象（PR番号とURL、またはローカル差分の範囲）、ブランチ、レビュアーの内訳。実際に走ったものだけを並べる（`/pr-review`は`code-reviewer`の各グループと`finding-verifier`、`/review-diff`はそれに加えて`codex-reviewer`と自動チェックツール）
 - **サマリー**: Critical / High / Medium / Low の件数
-- **指摘一覧**: 重大度バッジ、`file:line`、由来ラベル（codex由来は`[codex]`）、説明、改善提案。該当diffの抜粋は`<details>`で畳む
+- **指摘一覧**: 重大度バッジ、`file:line`、由来ラベル（codex由来は`[codex]`）、反証を通ったか未検証か、説明、改善提案。該当diffの抜粋は`<details>`で畳む
+- **反証された指摘**: 一覧から外した指摘と、反証の根拠（`file:line`と理由）。`<details>`で畳む。0件なら節ごと出さない
 - **自動チェック結果**: ESLint / Ruff / golangci-lint 等の出力の要点
 - **次のステップ**
 
@@ -63,7 +64,7 @@ Claude Codeには`/artifact-pr-review`という組み込みのPRレビューペ�
 | `pr-review` | `<repo>-pr<PR番号>-review.html` |
 | `review-diff` | `<repo>-<branch>-review-diff.html` |
 | `plan` | `plan-<拡張子を除いたプランファイル名>.html` |
-| `review` | `<repo>-<branch>-<観点>-review.html`（観点は`security` / `test` / `quality` / `guidelines` / `pr-compliance`） |
+| `review` | `<repo>-<branch>-<観点>-review.html`（観点は`security` / `errors` / `test` / `quality` / `comments` / `guidelines` / `pr-compliance`） |
 
 `<repo>`と`<branch>`は次で取る。ほかのコマンドを使うと`allowed-tools`に無く、許可プロンプトが出る。
 

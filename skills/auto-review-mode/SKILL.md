@@ -1,11 +1,12 @@
 ---
+name: auto-review-mode
 description: 自動レビューをどこまで行うかをこのセッションで切り替える
 argument-hint: [off|review|fix|auto]
 disable-model-invocation: true
 allowed-tools: Bash(mkdir *), Bash(printf *), Bash(cat *), Bash(rm *), Bash(find *)
 ---
 
-# 自動レビュー切り替えコマンド
+# 自動レビュー切り替え手順
 
 ターンの終わりに走る自動レビューを、このセッションでどこまで行うかを切り替える。
 

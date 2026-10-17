@@ -207,7 +207,7 @@ mode_for() {
   fi
 }
 
-# 指定を書く。コマンドが書くのと同じ場所・同じ形
+# 指定を書く。スキルが書くのと同じ場所・同じ形
 set_mode_for() {
   mkdir -p "$CLAUDE_AUTO_REVIEW_MODE_DIR"
   printf '%s\n' "$2" >"${CLAUDE_AUTO_REVIEW_MODE_DIR}/$1"

@@ -1,9 +1,10 @@
 ---
+name: ci-fix
 description: 現在のブランチのPRでCI失敗を自動修正する
 allowed-tools: Bash(gh pr checks *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Bash(pip-audit *), Read, Write, Edit, Grep, Glob, Skill
 ---
 
-# CI修正コマンド
+# CI修正手順
 
 現在のブランチのPRでCI失敗を自動修正する。
 

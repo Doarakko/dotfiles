@@ -1,4 +1,5 @@
 ---
+name: pr-create
 description: 新規ブランチ作成からPR作成までを一連で実行する
 when_to_use: PR・プルリクエストの作成を依頼されたとき、変更をPRにまとめるとき、`gh pr create`を実行しようとしたときに使用
 argument-hint: [--from-main]

@@ -1,10 +1,11 @@
 ---
+name: pr-fix
 description: PRのレビューコメントとCIエラーを自動修正する
 argument-hint: [PR番号]
 allowed-tools: Skill, Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr checks *), Bash(gh pr comment *), Bash(gh api repos/*/pulls/*/comments*), Bash(gh api repos/*/pulls/*/reviews*), Bash(gh repo view *), Bash(gh run view *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git merge *), Bash(npm *), Bash(npx *), Bash(ruff *), Bash(golangci-lint *), Read, Write, Edit, Grep, Glob, WebFetch
 ---
 
-# PR自動修正コマンド
+# PR自動修正手順
 
 PRのレビューコメントとCIエラーを自動修正する。
 
@@ -43,7 +44,7 @@ PR番号省略時は現在のブランチのPRを使用。
    b. `git merge --no-commit --no-ff origin/master` でコンフリクトを確認
    c. コンフリクトがなければ `git merge --abort`
    d. コンフリクトがあれば解消してコミット・プッシュ
-3. `doarakko-config:review-followup` スキルを起動し、その手順に従って修正方針を確認する。このコマンドは修正まで行うため、スキル側の手順1では「修正しない」を出さない
+3. `doarakko-config:review-followup` スキルを起動し、その手順に従って修正方針を確認する。このスキルは修正まで行うため、スキル側の手順1では「修正しない」を出さない
 4. 各レビューコメント修正について:
    a. 修正を適用。`doarakko-config:test-implementation` が起動した場合は自動化文脈である旨を渡し、テスト基盤の確認を出させない
    b. コミット・プッシュ

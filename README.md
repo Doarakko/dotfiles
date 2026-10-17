@@ -64,7 +64,7 @@ Claude picks these up on its own when the task calls for them, and the workflows
 | `pr-compliance-review` | Check an implementation against the PR description and linked issues |
 | `test-implementation` | Add tests in the same turn as the implementation |
 | `docs-update` | Update documentation to match code changes |
-| `decision-save` | Record a technical decision — options compared, what was chosen, and why — once it is settled. Writes into the repository's existing decision records — the location its docs name, `.adr-dir`, or a directory such as `docs/adr/` — following their numbering and template, and falls back to `docs/decisions/` |
+| `decision-save` | Record a technical decision — options compared, what was chosen, and why — once it is settled. Writes into the repository's existing decision records — the location its docs name, `.adr-dir`, or a directory such as `docs/adr/` — following their numbering and template, and falls back to `docs/decisions/`. Commits the record on its own, leaving anything else you have staged out of it, and never pushes |
 | `dependabot-setting` | Generate `.github/dependabot.yml` and pin mutable references |
 | `project-setup` | Audit dependency automation, runtime pinning, and CI/CD — build, lint, test, deploy, and per-PR preview. Triggers on an unfamiliar project, a newly created repository, and the first push or PR in a repository |
 | `review-followup` | Shared post-review confirmation flow — invoked by the review skills, not by you |

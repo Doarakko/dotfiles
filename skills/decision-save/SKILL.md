@@ -1,7 +1,7 @@
 ---
 name: decision-save
 description: 技術的な意思決定をしたとき（複数の案を比べて採用案を決めた、ユーザーが方針を選んだ、案を見送った）に、その経緯をリポジトリの意思決定記録（既存のADRディレクトリ、無ければdocs/decisions）へ残すときに使用
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git rev-parse *), Bash(date *), Bash(mkdir *), Bash(ls *)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git rev-parse *), Bash(git add *), Bash(git commit *), Bash(date *), Bash(mkdir *), Bash(ls *)
 ---
 
 # 意思決定の記録手順
@@ -93,9 +93,27 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git diff *), Bash(git log *),
 （参照したドキュメント、Issue、PR。無ければ節ごと省く）
 ```
 
-## 6. 結果を伝える
+## 6. コミットする
 
-作成または更新したファイルのパスと、記録した判断の1行要約を伝える。出力先を既存の置き場所から選んだときは、その根拠（規約の記載、`.adr-dir`、既存のディレクトリ）も1行添える。作業の流れを止めないよう、報告は短くする。
+書いた記録は、ほかの変更と混ぜずに単独でコミットする。
+
+```bash
+git add -- <作成・更新したファイル>
+git commit -m "docs(decisions): <判断のタイトル>" -- <作成・更新したファイル>
+```
+
+- パスを `--` の後ろに並べ、記録のファイルだけをコミットする。ユーザーがステージしている別の変更を巻き込まない
+- 索引ファイルを更新した場合や、置き換えた古い記録のステータスを書き換えた場合は、それらも同じコミットに含める
+- コミットメッセージは `git log --oneline -10` で既存の書き方を見て、そちらに揃える
+- pushはしない
+- 次のときはコミットせず、ファイルを残したまま理由を報告する
+  - マージ・リベース・cherry-pickの途中（`git status` に表示される）
+  - リポジトリの外で記録した
+  - コミットが失敗した（pre-commitフックで落ちたなど）。フックを飛ばして通さない
+
+## 7. 結果を伝える
+
+作成または更新したファイルのパス、コミットしたかどうかと、記録した判断の1行要約を伝える。出力先を既存の置き場所から選んだときは、その根拠（規約の記載、`.adr-dir`、既存のディレクトリ）も1行添える。作業の流れを止めないよう、報告は短くする。
 
 ## ルール
 
@@ -103,4 +121,4 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git diff *), Bash(git log *),
 - 「検討した選択肢」には、実際に挙がった案だけを書く
 - 秘匿情報や絶対パスを書かない。絶対パスにはユーザー名が入る
 - 既存の記録が無ければ日本語で書く（ファイル名のトピック部分のみ英語）。既存の記録があればその言語に合わせる
-- コミットはしない。記録は他の変更と一緒にユーザーがコミットする
+- コミットするのは記録のファイルだけ。pushはしない

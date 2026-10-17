@@ -54,8 +54,10 @@ Defined in `commands/`.
 | | |
 | --- | --- |
 | `e2e-check` | Drive Playwright CLI to verify behaviour and capture screenshots |
-| `security-review` | Review code for vulnerabilities |
-| `test-review` | Review test quality |
+| `vulnerability-review` | Review code for vulnerabilities. Not named `security-review`, because that name resolves to Claude Code's built-in command when an agent preloads it. Reports only findings with a concrete attack path and lists the classes it deliberately leaves out (missing rate limiting, DoS, non-credential config values, and so on) |
+| `silent-failure-review` | Find failures that are swallowed without anyone noticing — empty catches, unexplained fallbacks, defaults that hide an error — while respecting a project's documented reasons to swallow |
+| `test-review` | Review test quality. Rates each missing or weak test 1–10 and reports 5 and above |
+| `comment-review` | Check that comments still match the code and explain why rather than restate what |
 | `coding-style-guide-review` | Check compliance with project conventions |
 | `pr-compliance-review` | Check an implementation against the PR description and linked issues |
 | `test-implementation` | Add tests in the same turn as the implementation |
@@ -71,7 +73,8 @@ Defined in `skills/<name>/SKILL.md`.
 
 | | |
 | --- | --- |
-| `code-reviewer` | Review code, read-only. Loads the review skills above |
+| `code-reviewer` | Review code, read-only. Loads the review skills above and reports only findings it rates at 80 or more out of 100 for confidence |
+| `finding-verifier` | Try to disprove Critical and High findings against the cited code, read-only. Used by `/review-diff` and `/pr-review` |
 | `codex-reviewer` | Second opinion from a different model via the codex CLI, read-only |
 | `test-generator` | Generate tests for one file. `test-implementation` fans out to it for 3+ files |
 
@@ -103,13 +106,29 @@ An unreadable setting is ignored rather than obeyed, and an unknown permission m
 
 The setting lives in `/tmp/claude/auto-review-mode/<session>` (`CLAUDE_AUTO_REVIEW_MODE_DIR` moves it, which is how the test suite keeps off the real one) and is scoped to one session — a new session always starts from the default, so you cannot forget that you turned it off. `/auto-review-mode` is user-invoked only: the hook exists to stop unreviewed changes from slipping through, so the side being reviewed does not get to switch it off.
 
-Turning it `off` does not take reviewing away. `/review-diff` is a command, not the hook, so it never reads the setting — it starts the same two reviewers over the same points, and adds a lint run, an HTML page, and a prompt asking which findings to fix. What it does not inherit is the scoping: it always reads the whole uncommitted diff unless you name a path, and it leaves the reviewed point untouched, so ending a turn right after one sends the same diff through the hook a second time. Switch to `off` first when you want to drive the review yourself. For a pull request, `/pr-review` is the one to reach for.
+Turning it `off` does not take reviewing away. `/review-diff` is a command, not the hook, so it never reads the setting — it reviews the same points more deeply, and adds a lint run, an HTML page, and a prompt asking which findings to fix. What it does not inherit is the scoping: it always reads the whole uncommitted diff unless you name a path, and it leaves the reviewed point untouched, so ending a turn right after one sends the same diff through the hook a second time. Switch to `off` first when you want to drive the review yourself. For a pull request, `/pr-review` is the one to reach for.
+
+## Manual review
+
+`/review-diff` and `/pr-review` split `code-reviewer` into groups and start them in parallel, so one reviewer is not spread across every point at once. Which groups run depends on the kinds of files that changed.
+
+| Group | Points | Runs when |
+| --- | --- | --- |
+| Safety | `security`, `errors` | Code changed — scripts, config, CI definitions, and Markdown that Claude Code runs (command, skill, and agent definitions) count as code |
+| Readability | `quality`, `comments`, `guidelines` | Always. A docs-only change gets `guidelines` alone |
+| Tests | `test` | Code or tests changed |
+| Requirements | `pr-compliance` | Always, `/pr-review` only |
+
+`/review-diff` adds `codex-reviewer` alongside them. After the findings are merged, the Critical and High ones go to `finding-verifier` in one batch, and whatever it disproves with a cited `file:line` moves to a separate "refuted" list with the reason. Medium and Low are not verified — there are too many to be worth the cost — and are marked as such. If the verifier fails, nothing is dropped.
+
+The `Stop` hook does none of this. It starts a single `code-reviewer` with every point, because it runs on every turn and the extra agents would multiply the cost of each one.
 
 ## External setup
 
 None of this can be inferred from the code.
 
 - **codex** — run `codex login`; without it every review fails with a 401. PR review additionally needs the repository registered at <https://chatgpt.com/codex/settings/code-review>. When codex is unusable the review falls back to Claude alone and pauses codex for 6 hours; `cat /tmp/claude/codex-review-cooldown` shows why. Signing in through `CODEX_API_KEY` / `CODEX_ACCESS_TOKEN` / `OPENAI_API_KEY` counts as signed in but leaves no `~/.codex/auth.json` to refresh, so `codex login` does not end that wait — delete the marker instead.
+- **security-guidance** — installed by `aii` from the official marketplace. It warns on known-dangerous patterns as files are edited and reviews each `git commit` and `git push` in the background. `.zshrc` exports `ENABLE_STOP_REVIEW=0` to turn off its end-of-turn review, which would run at the same moment as this plugin's `Stop` hook. That reaches only sessions started from zsh — a session launched from an IDE extension or a GUI does not inherit it and runs both reviews; put `ENABLE_STOP_REVIEW` in the `env` of `~/.claude/settings.json` to cover those too. Its reviews call the newest Opus through your own API path, so they cost tokens on top of the session — on the Anthropic API they do not show in Claude Code's cost figures; `grep 'Review usage' ~/.claude/security/log.txt` shows the estimate. It needs Python 3.8 or newer, and on its first session it builds a virtualenv under `~/.claude/security/` for the commit reviewer. Set `SECURITY_GUIDANCE_DISABLE=1` to turn it off entirely.
 - **gh** — 2.88.0 or newer to request `@copilot`, 2.99.0 or newer for `--attach` (E2E media on PRs). `--attach` exists only on `gh pr create`, not on `gh pr edit` or `gh pr comment`, so media cannot be added after the PR opens, and it cannot be combined with `--dry-run`.
 - **Copilot review on personal repositories** — `/pr-create` requests `@copilot` only when `gh repo view --json isInOrganization` reports an organization-owned repository, and skips the request when the owner is a personal account or the check fails. A review is billed to the seat of the account that requested it, so on a company Copilot Business or Enterprise seat a personal-repository review spends the company's AI credits and leaves the repository and user name in its usage report.
 - **Copilot review effort** — cannot be passed from the CLI. Set it per repository under Settings > Copilot > Code review > Review effort level, or enable a ruleset with "Automatically request Copilot code review".

@@ -169,6 +169,10 @@ alias cc='claude'
 alias ccw='claude --worktree'
 alias ccu='brew upgrade claude-code'
 
+# security-guidanceのターン終了時レビューを止める。同じ時点で自前の自動レビューが走り、二重になるため
+# 編集時のパターン検知とコミット時のレビューは残す
+export ENABLE_STOP_REVIEW=0
+
 # 登録するマーケットプレイス（導入と更新で共有）
 CLAUDE_MARKETPLACES=(
   ~/src/dotfiles
@@ -186,6 +190,7 @@ CLAUDE_PLUGINS=(
   typescript-lsp@claude-plugins-official
   pyright-lsp@claude-plugins-official
   feature-dev@claude-plugins-official
+  security-guidance@claude-plugins-official
 )
 
 # Homebrewから入れるAI開発ツール（導入と更新で共有）

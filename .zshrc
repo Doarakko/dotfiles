@@ -191,6 +191,7 @@ CLAUDE_PLUGINS=(
   pyright-lsp@claude-plugins-official
   feature-dev@claude-plugins-official
   security-guidance@claude-plugins-official
+  claude-security@claude-plugins-official
 )
 
 # Homebrewから入れるAI開発ツール（導入と更新で共有）

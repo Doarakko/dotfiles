@@ -41,7 +41,7 @@ All of them live in `skills/<name>/SKILL.md`.
 
 | | |
 | --- | --- |
-| `/pr-create` | Branch, commit, open a draft PR built on the repository's template plus a self-assessed review-depth section (`skills/pr-create/review-depth.md`), request Codex review, and Copilot review on organization-owned repositories |
+| `/pr-create` | Branch, commit, open a draft PR built on the repository's template with every AI-written description collapsed under an "AIによる説明" `<details>` section, plus a self-assessed review-depth section (`skills/pr-create/review-depth.md`), request Codex review, and Copilot review on organization-owned repositories |
 | `/pr-fix` | Apply PR review comments and fix CI failures |
 | `/pr-review` | Review a PR in detail |
 | `/ci-fix` | Fix CI failures on the current branch's PR |

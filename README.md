@@ -41,7 +41,7 @@ All of them live in `skills/<name>/SKILL.md`.
 
 | | |
 | --- | --- |
-| `/pr-create` | Branch, commit, open a draft PR built on the repository's template with every AI-written description collapsed under an "AIの下書き" `<details>` section, plus a self-assessed review-depth section (`skills/pr-create/review-depth.md`), request Codex review, and Copilot review on organization-owned repositories |
+| `/pr-create` | Branch, commit, open a draft PR built on the repository's template with every AI-written description collapsed under an "AIの下書き" `<details>` section, with the URLs of every source the change relies on listed in the draft, plus a self-assessed review-depth section (`skills/pr-create/review-depth.md`), request Codex review, and Copilot review on organization-owned repositories |
 | `/pr-fix` | Apply PR review comments and fix CI failures |
 | `/pr-review` | Review a PR in detail |
 | `/ci-fix` | Fix CI failures on the current branch's PR |
@@ -59,7 +59,7 @@ Claude picks these up on its own when the task calls for them, and the workflows
 | `vulnerability-review` | Review code for vulnerabilities. Not named `security-review`, because that name resolves to Claude Code's built-in command when an agent preloads it. Reports only findings with a concrete attack path and lists the classes it deliberately leaves out (missing rate limiting, DoS, non-credential config values, and so on) |
 | `silent-failure-review` | Find failures that are swallowed without anyone noticing — empty catches, unexplained fallbacks, defaults that hide an error — while respecting a project's documented reasons to swallow |
 | `test-review` | Review test quality. Rates each missing or weak test 1–10 and reports 5 and above |
-| `comment-review` | Check that comments still match the code and explain why rather than restate what |
+| `comment-review` | Check that comments still match the code, explain why rather than restate what, and link the source URL of any external spec or document they rely on |
 | `coding-style-guide-review` | Check compliance with project conventions |
 | `pr-compliance-review` | Check an implementation against the PR description and linked issues |
 | `test-implementation` | Add tests in the same turn as the implementation |

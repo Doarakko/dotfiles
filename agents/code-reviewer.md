@@ -28,7 +28,7 @@ skills: vulnerability-review, silent-failure-review, test-review, comment-review
    - errors: silent-failure-review Skillの基準でチェック（握りつぶされた失敗、根拠の無い代替処理）
    - test: test-review Skillの基準でチェック
    - quality: コード品質（命名、重複、複雑度、デッドコード）
-   - comments: comment-review Skillの基準でチェック（コメントとコードの食い違い、古くなったコメント）
+   - comments: comment-review Skillの基準でチェック（コメントとコードの食い違い、古くなったコメント、根拠にした資料のURLの欠落）
    - guidelines: coding-style-guide-review Skillの基準でチェック（プロジェクト固有の規約準拠）
    - pr-compliance: pr-compliance-review Skillの基準でチェック（PR・Issue要件の充足）
 3. 指摘ごとに確信度を付け、80未満を落とす
